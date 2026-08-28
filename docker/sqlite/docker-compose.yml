@@ -1,0 +1,39 @@
+# Nexora Panel — SQLite (no other service needed).
+#
+#   docker compose up -d
+#   docker compose logs panel | grep setup     # the first-run setup link
+#
+# On first boot the panel has no account. It prints one-time setup links to its
+# log — one per address it can name, led by the address the internet sees this
+# host as, because inside a container every address on every interface is bridge
+# addressing that reaches nothing. Open whichever one reaches your server; the
+# wizard there sets the main admin, the panel path and HTTPS. To print the
+# link's token again:
+#
+#   docker compose exec panel /app/nexora-panel setup-token
+#
+# For PostgreSQL use ../postgres/docker-compose.yml instead. Move between them by
+# starting fresh: the database is the one thing the panel cannot migrate itself.
+services:
+  panel:
+    image: ghcr.io/nexora-vpn/panel:latest
+    restart: unless-stopped
+    container_name: nexora-panel
+    environment:
+      # Pins the address *inside* the container. The published mapping below is
+      # what the host sees, so a port changed in the panel UI must not move it —
+      # change both together if you want a different published port.
+      NEXORA_WEB_LISTEN: "0.0.0.0:2095"
+    volumes:
+      # The SQLite database.
+      - ./data:/app/db
+      # Node binaries the panel hands to node installers, and subscription page
+      # themes. Both are read from the working directory, which is /app.
+      - ./bin:/app/bin
+      - ./sub-themes:/app/sub-themes:ro
+      # Licensing ties the HWID to the HOST, not to an ephemeral container.
+      # Comment this out on a host without /etc/machine-id; the HWID then falls
+      # back to host DMI (via /sys) plus CPU.
+      - /etc/machine-id:/etc/machine-id:ro
+    ports:
+      - "2095:2095"
