@@ -1,0 +1,44 @@
+Nexora Panel — Proprietary Software License
+Copyright (c) 2026 Nexora. All rights reserved.
+
+This software (the "Software") and its source code are proprietary and
+confidential. They are licensed, not sold.
+
+1. GRANT. Subject to a valid license key issued by Nexora and to this
+   agreement, you are granted a non-exclusive, non-transferable right to run
+   the Software for your own use, within the resource limits encoded in your
+   license key.
+
+2. RESTRICTIONS. You may NOT, in whole or in part: copy (except a reasonable
+   backup), distribute, sublicense, sell, rent, lease, publish, or make the
+   Software available to any third party; modify, translate, reverse engineer,
+   decompile, or disassemble the Software; remove or alter any proprietary
+   notices; or circumvent, disable, or tamper with the license enforcement,
+   hardware binding, or usage limits.
+
+3. LICENSE KEYS. The Software runs with a restricted free tier unless activated
+   with a valid license key. A key is bound to a specific machine (hardware
+   fingerprint) and, where applicable, an expiry and an activation count.
+   Sharing a key, copying an activated database or virtual machine, or running
+   more instances than licensed is a breach of this agreement and may cause the
+   Software to revert to the free tier or cease operating.
+
+4. OWNERSHIP. Nexora retains all right, title, and interest in and to the
+   Software, including all intellectual property rights.
+
+5. NO WARRANTY. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+
+6. LIMITATION OF LIABILITY. IN NO EVENT SHALL NEXORA BE LIABLE FOR ANY CLAIM,
+   DAMAGES, OR OTHER LIABILITY ARISING FROM OR IN CONNECTION WITH THE SOFTWARE
+   OR ITS USE.
+
+7. TERMINATION. This license terminates automatically if you breach it. On
+   termination you must stop using and destroy all copies of the Software.
+
+Note: The Nexora Node (the data-plane component in a separate repository) links
+the sing-box library and is distributed under the GPL-3.0 license. This license
+governs the Nexora Panel only.
+
+For commercial licensing, contact the vendor.
