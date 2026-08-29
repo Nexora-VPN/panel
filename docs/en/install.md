@@ -119,6 +119,38 @@ In Docker the panel's port is pinned by `NEXORA_WEB_LISTEN` in the compose file,
 because the published port mapping lives there too. Changing the port in the
 panel UI would only make the container unreachable, so change both together.
 
+### Panel and node on the same server
+
+`docker/panel-and-node` is the SQLite stack with a node next to it. It is **not
+recommended**: a node's address goes into every subscription link you hand out,
+so running one here publishes the panel's address to every user, and client
+traffic is unbounded, so a node under load takes the panel — and every other
+node's subscriptions — down with it. For a lab, a demo or a small single-server
+deployment it is a reasonable trade. The
+[node's install guide](https://github.com/nexora-vpn/node/blob/main/docs/en/install.md#panel-and-node-on-the-same-server)
+lists the caveats in full.
+
+The node needs the panel's client certificate before it can start, and the panel
+only offers that once a node has been added in it — so this stack starts in two
+steps:
+
+```bash
+cd panel/docker/panel-and-node
+docker compose up -d panel
+docker compose logs panel | grep setup      # open the link, finish the wizard
+
+# then in the panel: add a node with address 127.0.0.1 and port 62050, and save
+# the client certificate from its install page as ./certs/panel_ca.pem
+docker compose up -d node
+```
+
+Both services use host networking — the node because the ports its inbounds use
+are chosen in the panel afterwards, the panel so it can reach the node on
+127.0.0.1. That leaves no port mapping to keep in sync, so this is the one stack
+that does *not* pin `NEXORA_WEB_LISTEN`: the port chosen in the wizard binds
+straight onto the host, as in a native install. The node's control port never
+leaves the machine and needs no firewall rule.
+
 ## Updating
 
 Run the installer again. It detects the existing install and updates in place:

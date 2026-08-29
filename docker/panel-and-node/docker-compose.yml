@@ -1,0 +1,78 @@
+# Nexora Panel and one node on the same server — **not recommended**. A node's
+# address goes into every subscription link you hand out, so running one here
+# publishes your panel's address to every user; and client traffic is unbounded,
+# so a node under load takes the panel — and every other node's subscriptions —
+# down with it. For a lab, a demo or a small single-server deployment it is a
+# reasonable trade. See docs/en/install.md#panel-and-node-on-the-same-server.
+#
+# The node cannot start before the panel: it needs the panel's client
+# certificate, and the panel only offers that once a node has been added in it.
+# So this stack starts in two steps.
+#
+#   1. docker compose up -d panel
+#      docker compose logs panel | grep setup     # open the link, finish the wizard
+#
+#   2. In the panel, add a node with the address 127.0.0.1 and port 62050, then
+#      copy the panel's client certificate from its install page into
+#      ./certs/panel_ca.pem — or, from this host, take it with the install
+#      token that page shows:
+#
+#        curl -fsSL -o certs/panel_ca.pem "http://127.0.0.1:2095/install/ca?token=TOKEN"
+#
+#      docker compose up -d node
+#
+# The node generates its own server certificate on first boot into ./certs, and
+# the panel pins it on first connection.
+#
+# Both services use host networking. The node needs it — client traffic lands on
+# whatever ports its inbounds use, and those are chosen in the panel afterwards,
+# so a bridged network cannot know them in advance. The panel joins it so it can
+# reach the node on 127.0.0.1, which is also why the node's control port never
+# leaves this machine and needs no firewall rule at all.
+#
+# SQLite, like ../sqlite. For PostgreSQL, copy the postgres service from
+# ../postgres/docker-compose.yml, publish it on `127.0.0.1:5432:5432` (host
+# networking means the panel reaches it there, not by service name) and set
+# NEXORA_DB_DRIVER/NEXORA_DB_DSN on the panel accordingly.
+services:
+  panel:
+    image: ghcr.io/nexora-vpn/panel:latest
+    restart: unless-stopped
+    container_name: nexora-panel
+    # Host networking: no published port mapping, so — unlike the other two
+    # stacks — NEXORA_WEB_LISTEN is deliberately *not* set here. Nothing has to
+    # be kept in sync with a mapping, so the port chosen in the setup wizard
+    # binds straight onto the host, exactly as in a native install. Until the
+    # wizard runs, that is 2095.
+    network_mode: host
+    volumes:
+      # The SQLite database.
+      - ./data:/app/db
+      # Node binaries the panel hands to node installers (for the nodes on other
+      # servers — this one runs from its own image), and subscription themes.
+      - ./bin:/app/bin
+      - ./sub-themes:/app/sub-themes:ro
+      # Licensing ties the HWID to the HOST, not to an ephemeral container.
+      # Comment this out on a host without /etc/machine-id; the HWID then falls
+      # back to host DMI (via /sys) plus CPU.
+      - /etc/machine-id:/etc/machine-id:ro
+
+  node:
+    image: ghcr.io/nexora-vpn/node:latest
+    restart: unless-stopped
+    container_name: nexora-node
+    depends_on:
+      - panel
+    environment:
+      # Loopback only. The panel is on this same host, and nothing else has any
+      # business reaching the control API.
+      NEXORA_NODE_LISTEN: "127.0.0.1:62050"
+      NEXORA_NODE_CERT: /app/certs/ssl_cert.pem
+      NEXORA_NODE_KEY: /app/certs/ssl_key.pem
+      NEXORA_NODE_CLIENT_CA: /app/certs/panel_ca.pem
+    volumes:
+      - ./certs:/app/certs
+    network_mode: host
+    # Needed by the TUN inbound and by any inbound that binds a privileged port.
+    cap_add:
+      - NET_ADMIN

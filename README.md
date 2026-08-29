@@ -54,6 +54,13 @@ docker compose logs panel | grep setup
 Images: `ghcr.io/nexora-vpn/panel` (`linux/amd64`, `linux/arm64`), published with
 every tagged release.
 
+A third stack, `docker/panel-and-node`, runs a node beside the panel on one
+server. It works, and it is **not recommended** — a node's address goes into
+every subscription link, so it publishes the panel's address to every user, and
+a node under load takes the panel down with it. The
+[install guide](docs/en/install.md#panel-and-node-on-the-same-server) has the
+two-step start and the caveats.
+
 ## Documentation
 
 - [English](docs/en/install.md)
