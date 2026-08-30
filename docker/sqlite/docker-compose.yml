@@ -23,7 +23,10 @@ services:
       # Pins the address *inside* the container. The published mapping below is
       # what the host sees, so a port changed in the panel UI must not move it —
       # change both together if you want a different published port.
-      NEXORA_WEB_LISTEN: "0.0.0.0:2095"
+      # Inside the container, bind the IPv6 wildcard — it accepts IPv4 too. What
+      # reaches the host is the port mapping below, so an IPv6-only host also
+      # needs that published on IPv6 (see the install guide).
+      NEXORA_WEB_LISTEN: "[::]:2095"
     volumes:
       # The SQLite database.
       - ./data:/app/db
@@ -32,8 +35,7 @@ services:
       - ./bin:/app/bin
       - ./sub-themes:/app/sub-themes:ro
       # Licensing ties the HWID to the HOST, not to an ephemeral container.
-      # Comment this out on a host without /etc/machine-id; the HWID then falls
-      # back to host DMI (via /sys) plus CPU.
+      # Comment this out on a host without /etc/machine-id;
       - /etc/machine-id:/etc/machine-id:ro
     ports:
       - "2095:2095"

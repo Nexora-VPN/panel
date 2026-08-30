@@ -15,7 +15,9 @@ first time you visit the panel.
 - A 64-bit Linux server with systemd (Debian 11+, Ubuntu 20.04+, RHEL 9+,
   or similar). 32-bit ARM and x86 are supported too.
 - Root access.
-- An open TCP port for the panel (2095 by default).
+- An open TCP port for the panel (2095 by default). The panel binds the IPv6
+  wildcard, which serves IPv4 as well, so a v4-only, v6-only or dual-stack
+  server all work unchanged.
 
 ## Install
 
@@ -65,6 +67,10 @@ the internet sees this host as. Use whichever actually reaches the server: on a
 VPS that is usually the public one, on a container host most of the others are
 virtual bridge addressing that reaches nothing.
 
+An IPv6 address appears in those links bracketed, which is what a URL needs —
+`http://[2001:db8::10]:2095/setup?t=…`. Paste it whole; a browser will not
+accept it without the brackets.
+
 If you lose the links, print the token again on the server and rebuild a URL
 around it:
 
@@ -90,7 +96,8 @@ The wizard collects everything in one form and saves it in one step:
     them: the panel cannot know which address your clients will use. Inside a
     container it only sees bridge addressing, and behind NAT the public address
     is on no interface at all — so if the address you type in your browser is
-    not listed, add it.
+    not listed, add it. IPv6 addresses go in plainly (`2001:db8::10`); brackets
+    are accepted and dropped.
   - Add a domain and the certificate is reissued to cover it; a subscription
     domain rides on the same certificate.
   - You may turn HTTPS off, but then passwords and subscription links travel in
@@ -118,6 +125,17 @@ before the first start.
 In Docker the panel's port is pinned by `NEXORA_WEB_LISTEN` in the compose file,
 because the published port mapping lives there too. Changing the port in the
 panel UI would only make the container unreachable, so change both together.
+
+`NEXORA_WEB_LISTEN` binds *inside* the container; what reaches the host is the
+`ports:` mapping, and Docker publishes on IPv4 only unless told otherwise. On an
+IPv6-only host, enable IPv6 in the daemon (`"ipv6": true` and `"ip6tables": true`
+in `/etc/docker/daemon.json`) and publish on both:
+
+```yaml
+    ports:
+      - "0.0.0.0:2095:2095"
+      - "[::]:2095:2095"
+```
 
 ### Panel and node on the same server
 
@@ -178,6 +196,7 @@ line, without the panel running:
 ```bash
 nexora-panel config list                       # what is set
 nexora-panel config set web_listen_port 2095   # a port you can reach
+nexora-panel config set web_listen_ip ""       # bind everywhere again (v4 and v6)
 nexora-panel config set web_domain ""          # stop restricting the hostname
 nexora-panel config set web_basepath ""        # serve at the root again
 systemctl restart nexora-panel
@@ -186,6 +205,22 @@ systemctl restart nexora-panel
 The installer puts `nexora-panel` on your PATH and the binary finds its own
 config file, so these work from any directory. In Docker, prefix them with
 `docker compose exec panel /app/`.
+
+## IPv6
+
+Nothing here needs configuring for it. The panel listens on `[::]:2095` by
+default, which on a dual-stack host answers IPv4 too; a host with IPv6 switched
+off cannot bind that and the panel falls back to `0.0.0.0:2095` by itself. To
+bind one family only, set `web_listen_ip` to a literal address (`::` or
+`0.0.0.0`, or one specific address) in the wizard or from the command line.
+
+Nodes are the same story from the other side: a node with only an IPv6 address is
+added with its address written plainly (`2001:db8::1`, brackets optional), and
+the panel brackets it wherever the syntax requires — share links come out as
+`vless://…@[2001:db8::1]:443?…` and a wireguard profile as
+`Endpoint = [2001:db8::1]:51820`, while a clash, sing-box or OpenVPN profile
+carries the bare address. Subscription URLs built on an IPv6 panel address are
+bracketed for the same reason.
 
 ## Uninstall
 

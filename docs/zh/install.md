@@ -12,7 +12,8 @@ HTTPS——都在你首次打开面板时出现的设置向导中选择。
 - 一台带 systemd 的 64 位 Linux 服务器（Debian 11+、Ubuntu 20.04+、RHEL 9+ 或同类）。
   32 位 ARM 与 x86 同样支持。
 - root 权限。
-- 一个对外开放的 TCP 端口（默认 2095）。
+- 一个对外开放的 TCP 端口（默认 2095）。面板绑定的是 IPv6 通配地址，同时也服务
+  IPv4，因此仅 v4、仅 v6 或双栈服务器都无需改动即可使用。
 
 ## 安装
 
@@ -57,6 +58,9 @@ http://203.0.113.10:2095/setup?t=9f3c1ad2…
 地址」的链接。请使用真正能连到服务器的那一条：在 VPS 上通常是公网地址，而在容器
 宿主机上，其余大多是通往任何地方的虚拟网桥地址。
 
+IPv6 地址在这些链接里带方括号，这正是 URL 所要求的——
+`http://[2001:db8::10]:2095/setup?t=…`。请整条粘贴；没有方括号浏览器不会接受。
+
 如果链接丢失，可在服务器上重新打印令牌，并据此拼出网址：
 
 ```bash
@@ -75,7 +79,8 @@ nexora-panel setup-token
   - **证书地址**已预填为你打开向导所用的地址，以及本机上所有公网可路由地址。
     请按需修改：面板无从得知你的客户端会使用哪个地址。在容器内它只能看到网桥
     地址，而在 NAT 之后，公网地址根本不在任何接口上——所以如果你在浏览器里输入
-    的地址不在列表中，请补上。
+    的地址不在列表中，请补上。IPv6 地址直接按原样填写（`2001:db8::10`）；方括号
+    也可接受，会被去掉。
   - 添加域名后会重新签发以覆盖该域名，订阅域名也放在同一张证书里。
   - 你可以关闭 HTTPS，但那样密码和订阅链接将以明文传输。
 - **时区** — 面板中所有时间按它显示。
@@ -98,6 +103,17 @@ docker compose logs panel | grep setup
 
 在 Docker 中，面板端口由 compose 文件里的 `NEXORA_WEB_LISTEN` 固定，因为端口映射
 也在同一个文件里。仅在面板界面改端口只会让容器无法访问，请两处一起改。
+
+`NEXORA_WEB_LISTEN` 绑定的是容器*内部*的地址；真正到达宿主机的是 `ports:` 映射，
+而 Docker 若不特别指定只会在 IPv4 上发布。在仅有 IPv6 的宿主机上，请在守护进程中
+启用 IPv6（在 `/etc/docker/daemon.json` 中设置 `"ipv6": true` 与
+`"ip6tables": true`），并同时在两者上发布：
+
+```yaml
+    ports:
+      - "0.0.0.0:2095:2095"
+      - "[::]:2095:2095"
+```
 
 ### 面板与节点部署在同一台服务器
 
@@ -150,6 +166,7 @@ docker compose pull && docker compose up -d
 ```bash
 nexora-panel config list                       # 查看已设置的项
 nexora-panel config set web_listen_port 2095   # 改成你能访问的端口
+nexora-panel config set web_listen_ip ""       # 重新绑定到所有地址（v4 与 v6）
 nexora-panel config set web_domain ""          # 取消主机名限制
 nexora-panel config set web_basepath ""        # 恢复在根路径提供服务
 systemctl restart nexora-panel
@@ -157,6 +174,19 @@ systemctl restart nexora-panel
 
 安装脚本会把 `nexora-panel` 放入 PATH，二进制也会自行找到配置文件，因此这些命令
 在任何目录下都可用。在 Docker 中请加前缀 `docker compose exec panel /app/`。
+
+## IPv6
+
+这里没有任何需要配置的东西。面板默认监听 `[::]:2095`，在双栈主机上同样响应 IPv4；
+关闭了 IPv6 的主机无法绑定该地址，面板会自行回退到 `0.0.0.0:2095`。若只想绑定其中
+一种协议族，可在向导中或用命令行把 `web_listen_ip` 设为一个具体地址（`::` 或
+`0.0.0.0`，或者某个特定地址）。
+
+节点是同一个故事的另一面：只有 IPv6 地址的节点，添加时把地址按原样填写即可
+（`2001:db8::1`，方括号可选），面板会在语法需要的地方加上方括号——分享链接形如
+`vless://…@[2001:db8::1]:443?…`，wireguard 配置形如
+`Endpoint = [2001:db8::1]:51820`，而 clash、sing-box 或 OpenVPN 的配置携带的是不
+带方括号的地址。基于面板 IPv6 地址生成的订阅 URL 出于同样的原因也会带方括号。
 
 ## 卸载
 

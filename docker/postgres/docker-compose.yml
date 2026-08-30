@@ -24,7 +24,10 @@ services:
         condition: service_healthy
     environment:
       # Pins the address *inside* the container; see the published mapping below.
-      NEXORA_WEB_LISTEN: "0.0.0.0:2095"
+      # Inside the container, bind the IPv6 wildcard — it accepts IPv4 too. What
+      # reaches the host is the port mapping below, so an IPv6-only host also
+      # needs that published on IPv6 (see the install guide).
+      NEXORA_WEB_LISTEN: "[::]:2095"
       NEXORA_DB_DRIVER: postgres
       NEXORA_DB_DSN: "host=postgres port=5432 user=nexora password=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env} dbname=nexora sslmode=disable"
     volumes:

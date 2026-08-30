@@ -61,6 +61,15 @@ a node under load takes the panel down with it. The
 [install guide](docs/en/install.md#panel-and-node-on-the-same-server) has the
 two-step start and the caveats.
 
+## IPv6
+
+The panel binds `[::]:2095` by default, which serves IPv4 as well — a v4-only,
+v6-only or dual-stack server all work with no configuration (on a host with IPv6
+switched off the panel falls back to `0.0.0.0` by itself). A node with only an
+IPv6 address is added with its address written plainly, `2001:db8::1`, and the
+panel brackets it wherever a link, a subscription URL or a client profile needs
+it.
+
 ## Documentation
 
 - [English](docs/en/install.md)
@@ -88,6 +97,7 @@ wrong port, domain or path is never a dead end:
 
 ```bash
 nexora-panel config set web_listen_port 2095
+nexora-panel config set web_listen_ip ""
 nexora-panel config set web_domain ""
 nexora-panel config set web_basepath ""
 systemctl restart nexora-panel
