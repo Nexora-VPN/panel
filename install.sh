@@ -231,11 +231,36 @@ install -m 0755 "${TMP}/nexora-panel/nexora-panel" "${INSTALL_DIR}/nexora-panel"
 # (bin/nexora-node-linux-<arch> under its working directory), so adding the first
 # node works without the operator staging anything. A missing arch is not fatal:
 # the panel simply cannot offer that one.
+# resolve_node_version turns an empty NODE_VERSION into the tag GitHub's
+# "latest" alias points at, by following the redirect it answers with. The panel
+# cannot read a release tag out of a binary, so what is staged has to be recorded
+# here or its version is lost — and the panel's automatic node installer shows
+# the operator which version it is about to install.
+resolve_node_version() {
+  [[ -n "$NODE_VERSION" ]] && { echo "$NODE_VERSION"; return; }
+  [[ -n "${NEXORA_DOWNLOAD_BASE:-}" ]] && return 0   # a mirror has no tag to ask for
+  local url
+  url="$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
+    "https://github.com/${NODE_REPO}/releases/latest" 2>/dev/null || true)"
+  # .../releases/tag/vX.Y.Z — anything else and we simply do not know.
+  case "$url" in
+    */releases/tag/*) echo "${url##*/}" ;;
+  esac
+}
+
 say "downloading node binaries"
+NODE_TAG="$(resolve_node_version)"
 for node_arch in amd64 arm64; do
   if curl -fsSL "$(asset_url "$NODE_REPO" "$NODE_VERSION" "nexora-node-linux-${node_arch}.tar.gz")" -o "${TMP}/node.tar.gz" 2>/dev/null; then
     tar -C "$TMP" -xzf "${TMP}/node.tar.gz"
     install -m 0755 "${TMP}/nexora-node/nexora-node" "${STATE_DIR}/bin/nexora-node-linux-${node_arch}"
+    # The sidecar is the panel's only way to name the version it serves. A stale
+    # one would be worse than none, so it is removed when the tag is unknown.
+    if [[ -n "$NODE_TAG" ]]; then
+      printf '%s\n' "$NODE_TAG" > "${STATE_DIR}/bin/nexora-node-linux-${node_arch}.version"
+    else
+      rm -f "${STATE_DIR}/bin/nexora-node-linux-${node_arch}.version"
+    fi
   else
     warn "no node binary published for linux-${node_arch}; nodes on that architecture must be installed manually"
   fi
