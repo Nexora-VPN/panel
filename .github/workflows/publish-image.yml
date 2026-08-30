@@ -1,0 +1,61 @@
+name: Publish image
+
+on:
+  repository_dispatch:
+    types: [publish-image]
+  workflow_dispatch:
+    inputs:
+      digest:
+        description: "Image digest already in GHCR (sha256:…)"
+        required: true
+      version:
+        description: "Release tag to publish it as (vX.Y.Z)"
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+# Two releases tagging the same package must not interleave.
+concurrency:
+  group: publish-image
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: ghcr.io/${{ github.repository_owner }}/panel
+      DIGEST: ${{ github.event.client_payload.digest || inputs.digest }}
+      VERSION: ${{ github.event.client_payload.version || inputs.version }}
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Put the released tags on the built digest
+        run: |
+          set -euo pipefail
+          case "$DIGEST" in sha256:*) ;; *) echo "not a digest: ${DIGEST}" >&2; exit 1 ;; esac
+          case "$VERSION" in v[0-9]*) ;; *) echo "not a release tag: ${VERSION}" >&2; exit 1 ;; esac
+
+          bare="${VERSION#v}"
+          tags=("$VERSION" "$bare")
+          # A prerelease moves neither the major.minor tag nor `latest`: `latest`
+          # is what the documented compose files pull.
+          case "$bare" in
+            *-*) ;;
+            *) tags+=("${bare%.*}" latest) ;;
+          esac
+
+          args=()
+          for t in "${tags[@]}"; do args+=(--tag "${IMAGE}:${t}"); done
+          echo "tagging ${IMAGE}@${DIGEST} as: ${tags[*]}"
+          docker buildx imagetools create "${args[@]}" "${IMAGE}@${DIGEST}"
+          docker buildx imagetools inspect "${IMAGE}:${VERSION}"
