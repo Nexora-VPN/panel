@@ -48,6 +48,11 @@ services:
     volumes:
       # The SQLite database.
       - ./data:/app/db
+      # Backup archives, kept beside the database by default (/app/db/backups).
+      # Mounted out so they can be copied off this host — and because on this
+      # stack the panel and a node share one server, which is exactly the
+      # arrangement where losing the server loses everything at once.
+      - ./backups:/app/db/backups
       # Node binaries the panel hands to node installers (for the nodes on other
       # servers — this one runs from its own image), and subscription themes.
       - ./bin:/app/bin

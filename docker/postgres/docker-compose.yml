@@ -31,6 +31,14 @@ services:
       NEXORA_DB_DRIVER: postgres
       NEXORA_DB_DSN: "host=postgres port=5432 user=nexora password=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env} dbname=nexora sslmode=disable"
     volumes:
+      # Backup archives. With PostgreSQL there is no database file to keep them
+      # beside, so the panel writes them to /var/opt/nexora/backups; without
+      # this mount they would live inside the container and go with it. Note
+      # that a panel backup is a dump of the panel's own database taken by the
+      # panel — it does not need pg_dump, and it restores onto SQLite too. An
+      # archive holds every credential the panel has: guard ./backups like the
+      # database.
+      - ./backups:/var/opt/nexora/backups
       - ./bin:/app/bin
       - ./sub-themes:/app/sub-themes:ro
       - /etc/machine-id:/etc/machine-id:ro

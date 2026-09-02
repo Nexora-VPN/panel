@@ -101,6 +101,10 @@ docker compose logs panel | grep setup
 
 使用 PostgreSQL 编排时，请在首次启动前把 `.env.example` 复制为 `.env` 并设置密码。
 
+每个编排都把必须比容器活得更久的东西放在其 compose 文件旁边：SQLite 数据库在
+`./data`（PostgreSQL 编排改用具名卷），节点二进制在 `./bin`，备份归档在
+`./backups`——参见“备份”一节。
+
 在 Docker 中，面板端口由 compose 文件里的 `NEXORA_WEB_LISTEN` 固定，因为端口映射
 也在同一个文件里。仅在面板界面改端口只会让容器无法访问，请两处一起改。
 
@@ -188,14 +192,71 @@ systemctl restart nexora-panel
 `Endpoint = [2001:db8::1]:51820`，而 clash、sing-box 或 OpenVPN 的配置携带的是不
 带方括号的地址。基于面板 IPv6 地址生成的订阅 URL 出于同样的原因也会带方括号。
 
+## 备份
+
+面板会备份自己的数据库——侧边栏中的 **设置 → 备份**（仅限主管理员：一个归档包含
+面板所拥有的全部凭据）。
+
+归档是所有数据表的逻辑导出，装在一个 gzip 压缩的 tar 里，而不是数据库文件的副本。
+因此在 SQLite 上取得的归档可以还原到 PostgreSQL，反之亦然；把面板迁移到另一台服
+务器，用的也正是它。
+
+```
+设置 → 备份
+├─ 下载            直接下载到浏览器；服务器上不留任何文件
+├─ 在主机上备份    写入下面的备份目录
+├─ 计划任务        默认关闭：以小时为单位的间隔，以及保留多少个归档
+└─ 检查 / 还原     先查看归档内容，再用它替换数据库
+```
+
+**存放位置。** 原生安装为 `/var/opt/nexora/backups`。在 Docker 中，各个 stack 会
+把你启动的那个 `docker-compose.yml` 旁边的 `./backups` 挂载进去，因此归档留在宿主
+机上，容器被删除也不会丢。无论哪种方式，都请把该目录复制到别处——只存在于它所保护
+的那台机器上的备份，不算备份。
+
+**加密。** 口令是可选的，对下载、在主机上取得的备份以及计划任务的备份都生效
+（scrypt + AES-GCM）。面板保存它只是为了加密；丢失的口令无法找回，无法解密的归档
+也就无法还原——所以请把口令保存在你存放归档的地方，而不是面板上。
+
+**还原前先检查。** *检查* 会在不改动任何东西的前提下读取归档：里面有什么、何时由
+哪个面板版本取得，以及有哪些警告——来自另一台主机的归档（其许可证在这里无法通过
+校验）、不含主管理员的归档，以及取备份时未包含流量历史或操作日志的归档。
+
+**还原** 会替换数据库中的每一行并重启面板。在此之前，它会把当前数据库的**还原前
+快照**写入同一个目录；保留策略永远不会删除这些快照，因此一次事后发现不该做的还
+原，可以通过还原该快照来撤销。默认情况下，还原会保留 *本* 安装自己的地址设置
+（端口、域名、路径、TLS）和许可证，这样来自另一台机器的归档就不会把面板指向这台服
+务器并不具备的地址。
+
+**迁移到另一台服务器。** 在新服务器上安装面板，打开设置链接，在向导的第一屏不要
+填表，而是选择 *从另一台服务器迁移？从备份还原*。这是唯一一个在账户尚不存在时也能
+还原的地方——而全新安装正处于这种状态；在这里采用的是归档自身的设置，因为空的安装
+没有什么值得保留。许可证不会一起迁移：它绑定在主机的硬件指纹上，请在新服务器上安
+装你的密钥（`nexora-panel hwid` 会打印所需的指纹）。
+
+**从命令行**配置，适用于无界面或脚本化安装：
+
+```bash
+nexora-panel config set backup_enabled true
+nexora-panel config set backup_interval_hours 24    # 每天
+nexora-panel config set backup_keep 14              # 0 表示全部保留
+nexora-panel config set backup_dir /var/opt/nexora/backups   # 必须是绝对路径
+nexora-panel config set backup_passphrase "一个足够长的口令"
+```
+
+计划设置会在面板的下一次每小时轮询时读取，因此以上命令都不需要重启。
+`backup_passphrase` 永远不会被 `config list` 或 `config get` 打印出来。在 Docker
+中，请在这些命令前加上 `docker compose exec panel /app/`。
+
 ## 卸载
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/nexora-vpn/panel/main/install.sh) --uninstall
 ```
 
-服务与 `/opt/nexora-panel` 会被移除。位于 `/var/opt/nexora` 的数据库会被刻意保留；
-确认不再需要时请自行删除。
+服务与 `/opt/nexora-panel` 会被移除。位于 `/var/opt/nexora` 的数据库*以及备份*会被
+刻意保留；确认不再需要时请自行删除——如果这台服务器本身也要下线，请先把
+`/var/opt/nexora/backups` 复制走。
 
 ## 文件位置
 
@@ -206,6 +267,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/nexora-vpn/panel/main/instal
 | `/var/opt/nexora/nexora.db` | SQLite 数据库 |
 | `/var/opt/nexora/bin/` | 面板提供给节点安装脚本的节点二进制 |
 | `/var/opt/nexora/sub-themes/` | 订阅页面主题 |
+| `/var/opt/nexora/backups/` | 备份归档与还原前快照（权限 0700） |
 | `/etc/systemd/system/nexora-panel.service` | 服务单元 |
 
 其余内容——管理员、设置、证书、节点、用户——都存放在数据库中，由面板管理。

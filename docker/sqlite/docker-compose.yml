@@ -30,6 +30,12 @@ services:
     volumes:
       # The SQLite database.
       - ./data:/app/db
+      # Backup archives. The panel keeps them beside the database by default,
+      # which inside this container is /app/db/backups; mounting a directory of
+      # your own over it puts them somewhere you can copy off this host — which
+      # is the whole point of having them. An archive holds every credential the
+      # panel has, so treat ./backups exactly as you would the database itself.
+      - ./backups:/app/db/backups
       # Node binaries the panel hands to node installers, and subscription page
       # themes. Both are read from the working directory, which is /app.
       - ./bin:/app/bin

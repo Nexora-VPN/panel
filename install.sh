@@ -19,7 +19,7 @@ set -euo pipefail
 PANEL_REPO="nexora-vpn/panel"
 NODE_REPO="nexora-vpn/node"
 INSTALL_DIR="/opt/nexora-panel"   # binary + config.json
-STATE_DIR="/var/opt/nexora"       # database, node binaries, themes
+STATE_DIR="/var/opt/nexora"       # database, node binaries, themes, backups
 SERVICE="nexora-panel"
 UNIT="/etc/systemd/system/${SERVICE}.service"
 
@@ -118,8 +118,10 @@ if [[ $DO_UNINSTALL -eq 1 ]]; then
   systemctl daemon-reload
   rm -rf "$INSTALL_DIR"
   echo
-  echo "Nexora is removed. The database was left at ${STATE_DIR} —"
-  echo "delete it yourself if you no longer need it:  rm -rf ${STATE_DIR}"
+  echo "Nexora is removed. The database and the backups under ${STATE_DIR}"
+  echo "were left alone. Delete them yourself once you are sure — and take a copy"
+  echo "of ${STATE_DIR}/backups first if this server is going away:"
+  echo "  rm -rf ${STATE_DIR}"
   exit 0
 fi
 
@@ -210,7 +212,12 @@ else
   say "installing Nexora Panel (${ARCH})"
 fi
 
-mkdir -p "$INSTALL_DIR" "${STATE_DIR}/bin" "${STATE_DIR}/sub-themes"
+mkdir -p "$INSTALL_DIR" "${STATE_DIR}/bin" "${STATE_DIR}/sub-themes" "${STATE_DIR}/backups"
+# A backup archive holds every credential the panel has — admin password hashes,
+# user UUIDs, certificate private keys, the mTLS client key. The panel creates
+# this directory 0700 on its own; it is created here too so that an operator who
+# looks before taking the first backup finds it, and finds it closed.
+chmod 0700 "${STATE_DIR}/backups"
 
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -441,4 +448,5 @@ fi
 echo
 echo "  Service:  systemctl status ${SERVICE}"
 echo "  Logs:     journalctl -u ${SERVICE} -f"
+echo "  Backups:  ${STATE_DIR}/backups  (turn the schedule on under Settings → Backup)"
 echo

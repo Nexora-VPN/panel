@@ -70,6 +70,50 @@ IPv6 address is added with its address written plainly, `2001:db8::1`, and the
 panel brackets it wherever a link, a subscription URL or a client profile needs
 it.
 
+## Backups
+
+The panel backs up its own database — **Settings → Backup** in the sidebar.
+
+An archive is a logical dump of every table, not a copy of the database file, so
+one taken on SQLite restores onto PostgreSQL and back: it is also how you move
+between the two, and how you move a panel to another server. It carries
+**everything the panel knows**, credentials included, which is why every backup
+route is limited to the main admin and why an archive is worth encrypting before
+it leaves the server.
+
+| | |
+| --- | --- |
+| Download one | Straight to your browser, nothing kept on the server |
+| Take one on the host | Written into the backup directory below |
+| Schedule | Off by default; an interval in hours and how many archives to keep |
+| Encryption | Optional passphrase (scrypt + AES-GCM). The panel cannot recover a lost one |
+| Restore | From an upload or from an archive already on the host; the panel restarts into it |
+
+Archives live in `/var/opt/nexora/backups` on a native install, and in
+`./backups` next to the `docker-compose.yml` of whichever Docker stack you run.
+Copy that directory off the server — a backup that only exists on the machine it
+protects is not a backup.
+
+Before replacing anything, a restore writes a **pre-restore snapshot** of the
+current database into the same directory. Retention never deletes those; they are
+the undo.
+
+**Moving to a new server:** install the panel there and, on the setup wizard's
+first screen, choose *Restore a backup* instead of filling the form. The wizard
+is the only place a restore is possible before an account exists, which is
+exactly the state a fresh install is in. Take the licence key across too — it is
+bound to the host's fingerprint, so the new server needs its own.
+
+The schedule is also settable from the command line, which is what a headless or
+scripted install wants:
+
+```bash
+nexora-panel config set backup_enabled true
+nexora-panel config set backup_interval_hours 24
+nexora-panel config set backup_keep 14
+nexora-panel config set backup_passphrase "a long passphrase"   # optional
+```
+
 ## Documentation
 
 - [English](docs/en/install.md)

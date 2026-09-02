@@ -122,6 +122,11 @@ docker compose logs panel | grep setup
 For the PostgreSQL stack, copy `.env.example` to `.env` and set a password
 before the first start.
 
+Each stack keeps what has to survive the container next to its compose file: the
+SQLite database in `./data` (the PostgreSQL stack uses a named volume instead),
+node binaries in `./bin`, and backup archives in `./backups` — see
+[Backups](#backups).
+
 In Docker the panel's port is pinned by `NEXORA_WEB_LISTEN` in the compose file,
 because the published port mapping lives there too. Changing the port in the
 panel UI would only make the container unreachable, so change both together.
@@ -222,15 +227,81 @@ the panel brackets it wherever the syntax requires — share links come out as
 carries the bare address. Subscription URLs built on an IPv6 panel address are
 bracketed for the same reason.
 
+## Backups
+
+The panel backs up its own database, from **Settings → Backup** in the sidebar
+(main admin only — an archive holds every credential the panel has).
+
+An archive is a logical dump of every table inside a gzipped tar, not a copy of
+the database file. That is why one taken on SQLite restores onto PostgreSQL and
+back, and why it is the way to move a panel to another server.
+
+```
+Settings → Backup
+├─ Download          straight to your browser; nothing is kept on the server
+├─ Take on host      written into the backup directory
+├─ Schedule          off by default: an interval in hours, and how many to keep
+└─ Check / restore   inspect an archive first, then replace the database with it
+```
+
+**Where they live.** `/var/opt/nexora/backups` on a native install. In Docker,
+the stacks mount `./backups` next to the `docker-compose.yml` you started, so the
+archives are on the host and survive the container. Either way, copy that
+directory somewhere else — a backup that only exists on the machine it protects
+is not a backup.
+
+**Encryption.** A passphrase is optional and applies to the download, to backups
+taken on the host and to scheduled ones (scrypt + AES-GCM). The panel stores it
+only to encrypt with; it cannot recover a lost one, and an archive that cannot be
+decrypted cannot be restored — so keep the passphrase where you keep the archives'
+destination, not on the panel.
+
+**Checking before restoring.** *Check* reads an archive without touching
+anything: what it holds, when and by which panel version it was taken, and any
+warnings — an archive from another host (its licence will not validate here), one
+carrying no main admin, one taken without the traffic history or the audit log.
+
+**Restoring.** A restore replaces every row in the database and restarts the
+panel. Before it does, it writes a **pre-restore snapshot** of the current
+database into the same directory; retention never deletes those, so a restore
+that turned out to be wrong is undone by restoring the snapshot. By default a
+restore keeps *this* install's own address settings (port, domain, path, TLS) and
+its licence, so restoring an archive from another machine does not point the
+panel at an address this server does not have.
+
+**Moving to another server.** Install the panel on the new server, open the setup
+link, and on the wizard's first screen follow *Moving from another server? Restore
+a backup* instead of filling the form in. This is the one place a restore works
+before an account exists — which is exactly the state a fresh install is in — and
+here the archive's own settings are taken, because the empty install has none
+worth keeping. The licence does not travel: it is bound to the host's
+fingerprint, so install your key on the new server (`nexora-panel hwid` prints
+the fingerprint it needs).
+
+**From the command line**, for a headless or scripted install:
+
+```bash
+nexora-panel config set backup_enabled true
+nexora-panel config set backup_interval_hours 24    # daily
+nexora-panel config set backup_keep 14              # 0 keeps everything
+nexora-panel config set backup_dir /var/opt/nexora/backups   # must be absolute
+nexora-panel config set backup_passphrase "a long passphrase"
+```
+
+The schedule is read on the panel's next hourly tick, so none of these needs a
+restart. `backup_passphrase` is never printed back by `config list` or `config
+get`. In Docker, prefix these with `docker compose exec panel /app/`.
+
 ## Uninstall
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/nexora-vpn/panel/main/install.sh) --uninstall
 ```
 
-The service and `/opt/nexora-panel` are removed. Your database in
-`/var/opt/nexora` is deliberately left behind; delete it yourself when you are
-sure you no longer need it.
+The service and `/opt/nexora-panel` are removed. Your database *and your backups*
+in `/var/opt/nexora` are deliberately left behind; delete them yourself when you
+are sure you no longer need them — and copy `/var/opt/nexora/backups` off the
+server first if the server itself is going away.
 
 ## Where things live
 
@@ -241,6 +312,7 @@ sure you no longer need it.
 | `/var/opt/nexora/nexora.db` | the SQLite database |
 | `/var/opt/nexora/bin/` | node binaries the panel serves to node installers |
 | `/var/opt/nexora/sub-themes/` | subscription page themes |
+| `/var/opt/nexora/backups/` | backup archives and pre-restore snapshots (mode 0700) |
 | `/etc/systemd/system/nexora-panel.service` | the service unit |
 
 Everything else — admins, settings, certificates, nodes, users — lives in the

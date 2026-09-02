@@ -1,0 +1,9 @@
+# Runtime state the Docker stacks create inside a clone of this repository.
+# backups/ holds archives of the panel database — every admin password hash,
+# every user UUID, every private key the panel has. Never commit one.
+docker/*/backups/
+docker/*/data/
+docker/*/bin/
+docker/*/sub-themes/
+docker/*/certs/
+docker/*/.env
