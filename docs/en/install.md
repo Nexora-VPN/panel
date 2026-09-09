@@ -43,7 +43,10 @@ you are reproducing a specific fleet.
 
 SQLite is the right default: a Nexora panel is a small database, and one file is
 far easier to back up and move. Choose PostgreSQL when you already run one, or
-when your panel serves a large user base.
+when your panel serves a large user base — and note that this is the one decision
+the panel cannot revisit on its own, though you can migrate later with a backup.
+[Choosing a database](database.md) gives the thresholds, what the panel tunes for
+you on either backend, and the migration steps.
 
 ## Finish the setup
 

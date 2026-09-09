@@ -116,10 +116,12 @@ nexora-panel config set backup_passphrase "a long passphrase"   # optional
 
 ## Documentation
 
-- [English](docs/en/install.md)
-- [فارسی](docs/fa/install.md)
-- [Русский](docs/ru/install.md)
-- [中文](docs/zh/install.md)
+| | Install | Choosing a database |
+| --- | --- | --- |
+| English | [install](docs/en/install.md) | [database](docs/en/database.md) |
+| فارسی | [نصب](docs/fa/install.md) | [دیتابیس](docs/fa/database.md) |
+| Русский | [установка](docs/ru/install.md) | [база данных](docs/ru/database.md) |
+| 中文 | [安装](docs/zh/install.md) | [数据库](docs/zh/database.md) |
 
 ## Releases
 

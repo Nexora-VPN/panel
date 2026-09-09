@@ -37,7 +37,9 @@ bash <(curl -fsSL https://raw.githubusercontent.com/nexora-vpn/panel/main/instal
 否则这正是你想要的。
 
 SQLite 是合适的默认选项：Nexora 面板的数据量很小，单个文件在备份和迁移时方便得多。
-当你已经在运行 PostgreSQL，或面板需要服务大量用户时，再选择 PostgreSQL。
+当你已经在运行 PostgreSQL，或面板需要服务大量用户时，再选择 PostgreSQL。这是面板自己
+无法事后更改的唯一决定，不过你之后可以通过备份迁移。[选择数据库](database.md) 给出了
+阈值、面板在两种数据库上分别替你做的调优，以及迁移步骤。
 
 ## 完成设置
 
