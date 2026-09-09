@@ -39,6 +39,14 @@ services:
       # archive holds every credential the panel has: guard ./backups like the
       # database.
       - ./backups:/var/opt/nexora/backups
+      # Mirrored rule-set files: the panel's own copy of every rule-set it is
+      # given, which is what its nodes download. With PostgreSQL there is no
+      # database file to keep them beside, so they go to /var/opt/nexora/rulesets
+      # — without this mount they live inside the container, and every recreate
+      # throws the cache away and re-downloads it from the internet. A node whose
+      # first rule-set fetch fails refuses its whole configuration, so this is
+      # worth keeping.
+      - ./rulesets:/var/opt/nexora/rulesets
       - ./bin:/app/bin
       - ./sub-themes:/app/sub-themes:ro
       - /etc/machine-id:/etc/machine-id:ro

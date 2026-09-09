@@ -53,6 +53,12 @@ services:
       # stack the panel and a node share one server, which is exactly the
       # arrangement where losing the server loses everything at once.
       - ./backups:/app/db/backups
+      # Mirrored rule-set files, kept beside the database as well
+      # (/app/db/rulesets). This is the copy the node below downloads from,
+      # over the panel's own address; mounted out so the cache stays out of the
+      # database directory and can be cleared on its own — the panel
+      # re-downloads whatever is missing on the next start.
+      - ./rulesets:/app/db/rulesets
       # Node binaries the panel hands to node installers (for the nodes on other
       # servers — this one runs from its own image), and subscription themes.
       - ./bin:/app/bin

@@ -103,7 +103,8 @@ docker compose logs panel | grep setup
 
 每个编排都把必须比容器活得更久的东西放在其 compose 文件旁边：SQLite 数据库在
 `./data`（PostgreSQL 编排改用具名卷），节点二进制在 `./bin`，备份归档在
-`./backups`——参见“备份”一节。
+`./backups`——参见“备份”一节——面板分发给各节点的规则集镜像文件在 `./rulesets`。
+最后这个只是缓存：清空它是安全的，面板会在下次启动时重新下载缺失的部分。
 
 在 Docker 中，面板端口由 compose 文件里的 `NEXORA_WEB_LISTEN` 固定，因为端口映射
 也在同一个文件里。仅在面板界面改端口只会让容器无法访问，请两处一起改。
@@ -268,6 +269,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/nexora-vpn/panel/main/instal
 | `/var/opt/nexora/bin/` | 面板提供给节点安装脚本的节点二进制 |
 | `/var/opt/nexora/sub-themes/` | 订阅页面主题 |
 | `/var/opt/nexora/backups/` | 备份归档与还原前快照（权限 0700） |
+| `/var/opt/nexora/rulesets/` | 面板分发给各节点的规则集镜像文件 |
 | `/etc/systemd/system/nexora-panel.service` | 服务单元 |
 
 其余内容——管理员、设置、证书、节点、用户——都存放在数据库中，由面板管理。

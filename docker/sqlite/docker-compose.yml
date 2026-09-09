@@ -36,6 +36,14 @@ services:
       # is the whole point of having them. An archive holds every credential the
       # panel has, so treat ./backups exactly as you would the database itself.
       - ./backups:/app/db/backups
+      # Mirrored rule-set files. The panel downloads every rule-set it is given
+      # and serves the copies to its nodes, keeping them beside the database —
+      # /app/db/rulesets inside this container. Mounting them out keeps a cache
+      # that is several megabytes of binary lists out of the database directory,
+      # and lets you clear it without touching the database: the panel
+      # re-downloads whatever is missing on the next start. They are deliberately
+      # not in a backup archive for the same reason.
+      - ./rulesets:/app/db/rulesets
       # Node binaries the panel hands to node installers, and subscription page
       # themes. Both are read from the working directory, which is /app.
       - ./bin:/app/bin

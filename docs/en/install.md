@@ -124,8 +124,10 @@ before the first start.
 
 Each stack keeps what has to survive the container next to its compose file: the
 SQLite database in `./data` (the PostgreSQL stack uses a named volume instead),
-node binaries in `./bin`, and backup archives in `./backups` — see
-[Backups](#backups).
+node binaries in `./bin`, backup archives in `./backups` — see
+[Backups](#backups) — and the mirrored rule-set files the panel serves to its
+nodes in `./rulesets`. That last one is a cache: clearing it is safe, and the
+panel re-downloads whatever is missing on the next start.
 
 In Docker the panel's port is pinned by `NEXORA_WEB_LISTEN` in the compose file,
 because the published port mapping lives there too. Changing the port in the
@@ -313,6 +315,7 @@ server first if the server itself is going away.
 | `/var/opt/nexora/bin/` | node binaries the panel serves to node installers |
 | `/var/opt/nexora/sub-themes/` | subscription page themes |
 | `/var/opt/nexora/backups/` | backup archives and pre-restore snapshots (mode 0700) |
+| `/var/opt/nexora/rulesets/` | mirrored rule-set files the panel serves to its nodes |
 | `/etc/systemd/system/nexora-panel.service` | the service unit |
 
 Everything else — admins, settings, certificates, nodes, users — lives in the
