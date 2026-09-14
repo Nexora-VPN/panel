@@ -216,6 +216,22 @@ The installer puts `nexora-panel` on your PATH and the binary finds its own
 config file, so these work from any directory. In Docker, prefix them with
 `docker compose exec panel /app/`.
 
+**Forgotten password.** The same offline route, for the account instead of the
+address:
+
+```bash
+nexora-panel admin list                        # which accounts exist, and which is the main one
+nexora-panel admin reset-password              # the main admin; the password is typed in, not echoed
+nexora-panel admin reset-password -user alice  # any other account
+```
+
+With no `-user` it takes the only main admin, and refuses — naming them — if
+there is more than one. The new password is asked for twice and never echoed;
+`-pass` sets it in one go for an unattended install, at the price of leaving it
+in your shell history. Sessions that are already open are not ended by this, so
+if the reason for the reset is that somebody else had the old password, restart
+the panel as well.
+
 ## IPv6
 
 Nothing here needs configuring for it. The panel listens on `[::]:2095` by
@@ -296,6 +312,27 @@ nexora-panel config set backup_passphrase "a long passphrase"
 The schedule is read on the panel's next hourly tick, so none of these needs a
 restart. `backup_passphrase` is never printed back by `config list` or `config
 get`. In Docker, prefix these with `docker compose exec panel /app/`.
+
+**Restoring from the command line**, for the case the panel is not running at
+all — the database lost, or the panel failing to start:
+
+```bash
+systemctl stop nexora-panel
+nexora-panel restore /var/opt/nexora/backups/nexora-backup-20260914-030000.tar.gz
+systemctl start nexora-panel
+```
+
+It reads the archive first and prints what it holds and any warnings, then asks
+you to type `replace-database`. A run with no terminal — a script, a pipe —
+takes `-yes` instead of the question. An encrypted archive takes `-passphrase`,
+or asks for it. As in the panel, this install's own address settings and licence
+are kept (`-keep-web-settings=false` and `-keep-license=false` take the
+archive's), and a pre-restore snapshot is written before anything changes.
+
+Stop the panel first. On SQLite the swap happens the next time the panel starts,
+so whatever a still-running panel writes in the meantime stays behind in the
+replaced database; on PostgreSQL the rows are replaced immediately, underneath
+it.
 
 ## Uninstall
 

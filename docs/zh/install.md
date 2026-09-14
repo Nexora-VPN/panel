@@ -182,6 +182,19 @@ systemctl restart nexora-panel
 安装脚本会把 `nexora-panel` 放入 PATH，二进制也会自行找到配置文件，因此这些命令
 在任何目录下都可用。在 Docker 中请加前缀 `docker compose exec panel /app/`。
 
+**忘记密码。** 同样是离线的方式，只不过针对的是账号而不是地址：
+
+```bash
+nexora-panel admin list                        # 有哪些账号，哪个是主管理员
+nexora-panel admin reset-password              # 主管理员；密码是输入的，不会回显
+nexora-panel admin reset-password -user alice  # 其他任何账号
+```
+
+不带 `-user` 时取唯一的主管理员；如果有多个，命令会拒绝执行并列出它们的名字。新
+密码会要求输入两次，且从不回显；`-pass` 可以一次给出，适合无人值守安装，代价是密
+码会留在 shell 历史里。已经打开的会话不会因此结束，所以如果重置的原因是旧密码落到
+了别人手里，请同时重启面板。
+
 ## IPv6
 
 这里没有任何需要配置的东西。面板默认监听 `[::]:2095`，在双栈主机上同样响应 IPv4；
@@ -250,6 +263,24 @@ nexora-panel config set backup_passphrase "一个足够长的口令"
 计划设置会在面板的下一次每小时轮询时读取，因此以上命令都不需要重启。
 `backup_passphrase` 永远不会被 `config list` 或 `config get` 打印出来。在 Docker
 中，请在这些命令前加上 `docker compose exec panel /app/`。
+
+**从命令行还原**，适用于面板根本起不来的情况——数据库丢了，或者面板启动即失败：
+
+```bash
+systemctl stop nexora-panel
+nexora-panel restore /var/opt/nexora/backups/nexora-backup-20260914-030000.tar.gz
+systemctl start nexora-panel
+```
+
+它会先把归档读一遍，打印其中的内容和所有警告，然后要求你输入
+`replace-database`。没有终端的运行方式——脚本、管道——则用 `-yes` 代替这个确认。
+加密归档用 `-passphrase` 提供口令，或者由它询问。和面板里一样，本机自己的地址设置
+与许可证会被保留（`-keep-web-settings=false` 和 `-keep-license=false` 则改用归档
+里的），并且在任何改动之前都会先写一份还原前快照。
+
+请先停止面板。在 SQLite 上，替换发生在面板下一次启动时，因此仍在运行的面板这期间
+写入的内容会留在被替换掉的那个数据库里；在 PostgreSQL 上，数据行会立刻在它脚下被
+替换。
 
 ## 卸载
 

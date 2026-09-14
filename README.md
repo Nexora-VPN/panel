@@ -149,6 +149,20 @@ nexora-panel config set web_basepath ""
 systemctl restart nexora-panel
 ```
 
+A forgotten password and a lost database are not dead ends either. These work
+with the panel stopped, which is the state they are for:
+
+```bash
+nexora-panel admin list                # the accounts, and which one is the main admin
+nexora-panel admin reset-password      # asks for the new one; never echoes it
+nexora-panel restore /var/opt/nexora/backups/nexora-backup-20260914-030000.tar.gz
+```
+
+`restore` prints what the archive holds before it asks to replace anything, and
+keeps this install's own address settings and licence. The command line goes no
+further than this: managing users, nodes or plans is the panel's job, and every
+one of these commands exists only for the moment the panel cannot be reached.
+
 See `nexora-panel help` for the full command list.
 
 ## Support

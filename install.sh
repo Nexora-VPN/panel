@@ -444,6 +444,7 @@ if [[ -n "$TOKEN" ]]; then
   echo "    nexora-panel setup-token"
 else
   echo "  This panel is already set up. Sign in on port ${PORT}."
+  echo "  Locked out? Stop the service, then: nexora-panel admin reset-password"
 fi
 echo
 echo "  Service:  systemctl status ${SERVICE}"
