@@ -228,9 +228,29 @@ nexora-panel admin reset-password -user alice  # any other account
 With no `-user` it takes the only main admin, and refuses — naming them — if
 there is more than one. The new password is asked for twice and never echoed;
 `-pass` sets it in one go for an unattended install, at the price of leaving it
-in your shell history. Sessions that are already open are not ended by this, so
-if the reason for the reset is that somebody else had the old password, restart
-the panel as well.
+in your shell history.
+
+The reset does three things, because a lost password and a lost phone are the
+same emergency: it sets the password, **turns two-factor authentication off**
+for that account (the seed and its recovery codes are cleared, so the operator
+enrols again from the panel), and **ends every session that account has open**.
+A running panel keeps a cached session for up to a minute of activity, which the
+command says; restart it if that minute matters.
+
+**Locked out by a ban.** Five failed logins from one address lock it out, and
+since the ban is stored it survives a restart. Two settings decide who that
+address is and who can never be locked out:
+
+```bash
+nexora-panel config set trusted_proxies "10.0.0.0/8"   # your nginx / CDN, or empty
+nexora-panel config set login_allowlist "203.0.113.7"  # addresses never banned
+```
+
+**A panel behind a reverse proxy or a CDN with no `trusted_proxies` sees every
+visitor as one address**, so the first lockout locks out everybody. Set it to
+the proxy's address, and keep your own network in `login_allowlist` as the way
+back in. The main admin can also clear a ban from **Settings → Security** once
+back inside.
 
 ## IPv6
 

@@ -114,6 +114,37 @@ nexora-panel config set backup_keep 14
 nexora-panel config set backup_passphrase "a long passphrase"   # optional
 ```
 
+## Accounts and access
+
+Operator accounts are the panel's, not the browser's. Sessions are stored, so a
+restart or an update logs nobody out, and each operator can see their own open
+sessions — address, client, last activity — and end any one of them from the
+account menu in the top bar. **Two-factor authentication**, enrolled from that
+same menu, is TOTP from any authenticator app, with ten single-use recovery
+codes; the sensitive routes — admin management, tokens, the licence, restores,
+panel settings — ask for the code again once it is more than ten minutes old.
+
+Failed logins are rate-limited per address and then **banned**, and the ban is
+stored, so it survives a restart and lengthens with each repetition. Two
+settings decide who that address is: `trusted_proxies` (behind nginx or a CDN,
+without it every visitor looks like one address, and the first lockout locks out
+everyone) and `login_allowlist`, addresses that are never locked out — your own
+network, as the way back in. Both are in **Settings → Security**, alongside the
+ban list itself.
+
+## Events
+
+The panel raises an event for everything worth being told about — a user
+created or out of quota, a node down or back, a disk over its threshold, a
+backup that failed, a licence about to expire, an operator logging in from a new
+address — and delivers it to **subscribers you add in Settings → Webhooks**.
+Each subscriber has its own URL, its own signing secret and its own list of
+events, and delivery is an outbox: a receiver that was down for an hour gets
+everything afterwards, signed, with retries and a delivery log you can replay
+from. `GET /api/events` lists every event with its payload shape. Telegram,
+email and the rest are integrations that sit on top of this, not panel
+features.
+
 ## Documentation
 
 | | Install | Choosing a database |
@@ -158,9 +189,11 @@ nexora-panel admin reset-password      # asks for the new one; never echoes it
 nexora-panel restore /var/opt/nexora/backups/nexora-backup-20260914-030000.tar.gz
 ```
 
-`restore` prints what the archive holds before it asks to replace anything, and
-keeps this install's own address settings and licence. The command line goes no
-further than this: managing users, nodes or plans is the panel's job, and every
+`reset-password` is also the way back from a lost phone: it turns two-factor
+authentication off for that account and ends every session it has open, so one
+command covers both halves of the same emergency. `restore` prints what the
+archive holds before it asks to replace anything, and keeps this install's own
+address settings and licence. The command line goes no further than this: managing users, nodes or plans is the panel's job, and every
 one of these commands exists only for the moment the panel cannot be reached.
 
 See `nexora-panel help` for the full command list.
