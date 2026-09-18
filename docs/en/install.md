@@ -268,6 +268,16 @@ the panel brackets it wherever the syntax requires — share links come out as
 carries the bare address. Subscription URLs built on an IPv6 panel address are
 bracketed for the same reason.
 
+## Links and subscriptions
+
+Once the fleet is up, what your customers receive is its own subject:
+**[links and subscriptions](subscriptions.md)**. It covers advertising several
+addresses per node, putting a CDN in front of an inbound (including the wildcard
+DNS record a per-customer hostname needs, and why the panel refuses to front a
+REALITY or Hysteria inbound), naming the entries from a template, and the one
+client setting — **Mux**, in Xray-based apps — that silently breaks these
+configurations.
+
 ## Backups
 
 The panel backs up its own database, from **Settings → Backup** in the sidebar

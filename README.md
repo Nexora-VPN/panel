@@ -145,14 +145,35 @@ from. `GET /api/events` lists every event with its payload shape. Telegram,
 email and the rest are integrations that sit on top of this, not panel
 features.
 
+## Links and subscriptions
+
+A user's subscription carries one entry per way they can reach your fleet, and
+two things widen that list. A node may advertise **several link addresses** — a
+second IP, a domain, an IPv6 address — each adding a copy of that node's
+entries. An inbound may sit behind one or more **domain fronts**: a CDN hostname
+clients dial instead of the node, which the CDN forwards to your server by the
+name it was given. The two **add, they never multiply** — a front hangs off the
+inbound, so it is written once however many nodes serve it — and a front address
+written `*.cdn.example.com` gives every customer their own hostname under one
+wildcard DNS record, so a blocked name costs one customer rather than all of
+them.
+
+Entry names come from a template (`{USER} · {ROUTE} · {REMAINING}`) with a
+server-rendered preview, and the response carries the headers clients actually
+read — title, quota, update interval, announcement, support link.
+
+See [links and subscriptions](docs/en/subscriptions.md) for all of it, including
+what a CDN cannot carry (REALITY, QUIC, port hopping) and why the panel refuses
+those pairs when you save them rather than dropping them silently later.
+
 ## Documentation
 
-| | Install | Choosing a database |
-| --- | --- | --- |
-| English | [install](docs/en/install.md) | [database](docs/en/database.md) |
-| فارسی | [نصب](docs/fa/install.md) | [دیتابیس](docs/fa/database.md) |
-| Русский | [установка](docs/ru/install.md) | [база данных](docs/ru/database.md) |
-| 中文 | [安装](docs/zh/install.md) | [数据库](docs/zh/database.md) |
+| | Install | Choosing a database | Links and subscriptions |
+| --- | --- | --- | --- |
+| English | [install](docs/en/install.md) | [database](docs/en/database.md) | [subscriptions](docs/en/subscriptions.md) |
+| فارسی | [نصب](docs/fa/install.md) | [دیتابیس](docs/fa/database.md) | [اشتراک‌ها](docs/fa/subscriptions.md) |
+| Русский | [установка](docs/ru/install.md) | [база данных](docs/ru/database.md) | [подписки](docs/ru/subscriptions.md) |
+| 中文 | [安装](docs/zh/install.md) | [数据库](docs/zh/database.md) | [订阅](docs/zh/subscriptions.md) |
 
 ## Releases
 
