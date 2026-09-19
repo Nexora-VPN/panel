@@ -111,6 +111,43 @@ Saving restarts the panel onto the address you just described, and the browser
 follows it. With a self-signed certificate your browser warns once — accept it
 and continue.
 
+## Disguising the panel
+
+A secret base path already keeps a scanner that finds your port from finding a
+login page. What it does not fix is the port itself: every other address answers
+404, and a host that completes a TLS handshake and then answers 404 to
+everything is not an ordinary server. It is a small signal, and it is the one
+that survives having no login page to find.
+
+**Settings → panel → masquerade directory** takes an absolute path, and every
+address on that port that is not the panel, a subscription or the rule-set
+mirror is served from it as an ordinary web site. `https://panel.example.com/`
+becomes whatever you put in that directory; the panel stays at its base path.
+It applies after a panel restart.
+
+The panel ships no page of its own, deliberately. A decoy included with the
+panel would be byte-for-byte identical on every install, and a scanner would
+key on the decoy instead of on the silence — a better fingerprint than the one
+it replaced. Put something there that suits the address: a landing page, a
+company site, a copy of whatever you would host anyway.
+
+Three things it does not do, each on purpose:
+
+- **It does not touch the API.** A request the panel accepted is the panel's, so
+  `GET /panel/api/users` without credentials is still a JSON 401. Turning
+  authentication failures into web pages would break every integration and the
+  panel's own interface with them.
+- **It does not list directories and does not serve dotfiles.** A listing is how
+  somebody reads the whole directory at once, and a directory copied off a host
+  arrives with a `.git` or a `.env` in it more often than not. A symlink
+  pointing out of the directory is not followed.
+- **It does nothing without a base path.** With the panel at the root there is
+  no address left for the decoy to cover. Set a base path first.
+
+A relative path is refused at save time, and so is `/`. A relative one would
+resolve against the panel's own working directory, which is where its database
+lives.
+
 ## Docker
 
 Two stacks, one per database. Pick a directory and start it:
@@ -209,8 +246,21 @@ nexora-panel config set web_listen_port 2095   # a port you can reach
 nexora-panel config set web_listen_ip ""       # bind everywhere again (v4 and v6)
 nexora-panel config set web_domain ""          # stop restricting the hostname
 nexora-panel config set web_basepath ""        # serve at the root again
+nexora-panel config set sub_domain ""          # stop reserving hosts for subscriptions
 systemctl restart nexora-panel
 ```
+
+That last one is the least obvious way to lose the panel, and it only bites when
+you have **no base path**. A domain listed in `sub_domain` serves subscriptions
+and nothing else, so an end user's link reveals nothing about where the panel is
+administered — and with the panel at the root of every host, that leaves nowhere
+to reach it on those names. List the only addresses you actually use
+(`localhost`, your server's IP) and it is unreachable from everywhere at once.
+
+Set a base path and the trap is gone: the panel stays reachable at that prefix on
+every host, subscription domains included. A customer holding a link would have
+to guess the prefix, which is already the only thing protecting the panel on your
+server's IP.
 
 The installer puts `nexora-panel` on your PATH and the binary finds its own
 config file, so these work from any directory. In Docker, prefix them with
@@ -267,6 +317,52 @@ the panel brackets it wherever the syntax requires — share links come out as
 `Endpoint = [2001:db8::1]:51820`, while a clash, sing-box or OpenVPN profile
 carries the bare address. Subscription URLs built on an IPv6 panel address are
 bracketed for the same reason.
+
+## Your first inbound
+
+**Inbounds → From a preset.** A preset is a protocol with its transport and its
+TLS decision already made — VLESS + REALITY, VLESS or Trojan over WebSocket
+behind a CDN, gRPC, Hysteria2 — so the first one is a pick and a save rather than
+four tabs of choices.
+
+Picking one **creates nothing**. It fills the ordinary inbound form, you confirm
+it, and what lands is an ordinary inbound row: nothing afterwards remembers which
+preset made it, and every field stays editable. The port, the tag and the
+transport path are generated per install, and for REALITY the panel mints the key
+pair and the short IDs when you save — there is no key to find and paste.
+
+The shelf itself is a file the panel serves, so you can add to it. Drop a `.json`
+into `/var/opt/nexora/presets/` (or whatever **Settings → Preset catalogue**
+points at) and it is merged onto the built-in list by key: a new key is added, an
+existing one replaced. That is also how you re-point a rule-set entry at a mirror
+where the upstream is blocked. A file that does not parse is skipped with a line
+in the panel log rather than taking the catalogue with it, and the settings page
+names the files actually in effect.
+
+## Routing and DNS presets
+
+**Templates → the template → Routing (or DNS) → From a preset.** The same shelf
+idea as inbounds: a routing block made of lists the panel already mirrors — block
+ads, and send Iranian (or Chinese, or Russian) domains and addresses out at the
+node instead of any further — and a set of encrypted resolvers for the DNS side.
+
+Applying a routing preset **replaces** the template's rules. That is deliberate:
+rule order *is* the routing, so merging somebody's rules with a preset's would
+produce an order neither of them chose. The rule sets it needs are added to the
+selection rather than replacing it.
+
+The part worth knowing about is what happens when a preset needs a list you do
+not have. The panel leaves out a rule set it has no copy of **and every rule
+matching on it** — it has to, because a node refuses its whole configuration if a
+rule names a rule-set nothing defines. So a preset applied without its lists
+would be a template that blocks nothing, with nothing anywhere saying why. The
+dialog checks first: it names the missing lists and offers to download them
+before applying, and it refuses outright when a list is one the catalogue cannot
+get either.
+
+The DNS presets are Cloudflare, Google, Quad9 and AdGuard over DNS-over-TLS, plus
+the node's own system resolver. AdGuard blocks ads at the resolver, which is an
+alternative to the ad-blocking routing preset rather than a companion to it.
 
 ## Links and subscriptions
 
@@ -394,6 +490,7 @@ server first if the server itself is going away.
 | `/var/opt/nexora/nexora.db` | the SQLite database |
 | `/var/opt/nexora/bin/` | node binaries the panel serves to node installers |
 | `/var/opt/nexora/sub-themes/` | subscription page themes |
+| `/var/opt/nexora/presets/` | preset catalogue files, merged onto the one the panel ships |
 | `/var/opt/nexora/backups/` | backup archives and pre-restore snapshots (mode 0700) |
 | `/var/opt/nexora/rulesets/` | mirrored rule-set files the panel serves to its nodes |
 | `/etc/systemd/system/nexora-panel.service` | the service unit |

@@ -7,6 +7,7 @@ called, and what the panel tells the client along with the file.
 | | |
 | --- | --- |
 | [How a subscription is built](#how-a-subscription-is-built) | why one node with three addresses is three entries and not three files |
+| [Where the links are published](#where-the-links-are-published) | the subscription domains, a hostname per customer, a domain per reseller |
 | [Several addresses per node](#several-addresses-per-node) | a second IP, a domain, an IPv6 address |
 | [Domain fronting](#domain-fronting) | putting Cloudflare in front of an inbound |
 | [Naming the entries](#naming-the-entries) | the name template and its variables |
@@ -42,6 +43,119 @@ Everything below changes that list. None of it is sent to a node: link
 addresses, fronts and entry names are all read when a client fetches its
 subscription, so an edit is live on the next fetch with nothing to sync and no
 core to restart.
+
+## Where the links are published
+
+Before any of that: the address the file is fetched *from*. It is a different
+thing from the panel's own address and the panel keeps the two apart on purpose
+— the panel prefix is meant to stay private, while a subscription URL is handed
+to every customer you have.
+
+**Settings → subscriptions → subscription domains.**
+
+Anything listed there serves `/sub`, and on those names the panel is reachable
+only at its **base path** — a request for the API or the login page at the root
+gets a 404, so the address your customers hold tells them nothing about where the
+panel is administered. (With no base path set there is nothing to hide behind, so
+those names serve subscriptions and nothing at all else. That is also the one way
+this setting can lock you out of the panel; see
+[locked out?](install.md#locked-out) in the install guide.)
+
+### Why it is a list
+
+Because a domain being blocked is a thing that happens, and by then the links
+are already in your customers' clients.
+
+- **New links are generated on the first domain.**
+- **Every domain in the list keeps serving** the links that were issued while it
+  was first.
+
+So replacing a blocked domain is: add the new one, move it to the top, and leave
+the old one in the list while your customers roll over on their own update
+schedule. Removing it from the list is what finally cuts those links off, and
+that is your decision to make rather than a side effect of adding the
+replacement.
+
+### What each one needs
+
+A DNS record pointing at the panel, and a place on the panel's certificate.
+Saving the setting reissues the panel's own certificate so it names every domain
+in the list. If you manage the certificate yourself — `web_cert_file` /
+`web_key_file`, or one from the certificate store — you have to put every name on
+it yourself: a domain the certificate does not cover is a TLS error in the
+client, not a link that merely renders somewhere else.
+
+At most eight. Leave the list empty and links are built on whatever address the
+panel was reached at, which is what a single-server install without a domain
+wants.
+
+### A hostname per customer
+
+A domain in that list may be written with a `*`:
+
+```
+*.sub.example.com
+```
+
+Every subscriber then gets a **different hostname** under it —
+`k4m2xr8qvp.sub.example.com` for one, `bt7wz3ncdh.sub.example.com` for the next
+— and the panel answers on all of them. One blocked hostname costs **one
+customer** instead of your whole book, which is the difference between a support
+ticket and a bad week.
+
+What makes it work rather than merely sound good:
+
+- **It is derived, not random.** The label is a hash of the account, so a
+  customer who re-fetches gets the same hostname. A name that changed on every
+  poll would break every client that has already saved it.
+- **It is one-way.** The hash goes in, nothing comes back out: a hostname on a
+  blocklist says nothing about the subscription token behind it.
+- **It is per domain.** The same customer gets an unrelated label under each
+  domain you configure, so blocking one name gives away nothing about the
+  replacement.
+
+**You need one wildcard DNS record**, `*.sub.example.com`, pointing at this
+panel. There is no way around it and nothing can warn you it is missing: without
+the record the hostnames resolve for nobody, which looks exactly like the domain
+being blocked. The panel's own certificate covers the wildcard automatically;
+if you manage the certificate yourself, it needs the `*.sub.example.com` name on
+it.
+
+Exactly one label is served. `abc.sub.example.com` works,
+`a.b.sub.example.com` does not — that is what a wildcard DNS record resolves and
+what a wildcard certificate covers, so anything deeper could not be reached
+anyway.
+
+A plain entry is untouched by any of this. An install that wants one hostname
+for everybody needs no DNS work and renders exactly what it did before.
+
+### A domain per reseller
+
+**Admins → the reseller → edit → subscription domain**, which only the main
+admin can set.
+
+It decides which of your configured domains that reseller's customers are
+published under. Left alone, they get the first one. A reseller cannot change
+its own — a domain is exactly the unit that gets blocked, so choosing one is
+choosing whose customers go down together, and that is not a reseller's call to
+make about somebody else's book.
+
+The two mechanisms stack rather than compete: with a wildcard domain per
+reseller, one blocked hostname costs one customer, and a blocked *domain* costs
+one reseller.
+
+If you remove a domain that a reseller was assigned, that reseller falls back to
+the first configured one rather than to nothing. Retiring a domain is already
+how you take it out of service and it must not take a reseller's whole book
+offline as a side effect.
+
+### One detail about rule sets
+
+Nodes download mirrored rule sets from this same published address, and a node
+dials a name — `*.sub.example.com` is not one. So the mirror uses the first
+**plain** domain in your list, and if every entry is a wildcard it uses
+`rulesets.sub.example.com`, which your wildcard DNS record and your certificate
+already cover. The rule sets page shows the address it settled on.
 
 ## Several addresses per node
 
