@@ -1,0 +1,16 @@
+# The datasource the dashboard expects. Provisioned rather than added by hand so
+# a fresh Grafana comes up already pointing at the right place.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: nexora-prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      # Matches prometheus.yml's scrape_interval, so Grafana's automatic step
+      # never asks for a resolution finer than the data has.
+      timeInterval: 60s

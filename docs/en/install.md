@@ -278,6 +278,16 @@ REALITY or Hysteria inbound), naming the entries from a template, and the one
 client setting — **Mux**, in Xray-based apps — that silently breaks these
 configurations.
 
+## Monitoring
+
+The panel publishes its own figures — nodes up, disk and memory per node,
+traffic, accounts by status, licence headroom, the event bus — at `/metrics` in
+the Prometheus format. **[Monitoring](monitoring.md)** has a compose overlay that
+runs Prometheus and Grafana beside your panel with a dashboard already
+provisioned, and four alerts worth having. Two things to know before you start:
+the endpoint needs an API token (it names every node you run), and a figure a
+node did not report has no series at all rather than a zero.
+
 ## Backups
 
 The panel backs up its own database, from **Settings → Backup** in the sidebar

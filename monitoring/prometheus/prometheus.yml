@@ -1,0 +1,42 @@
+# Scraping the Nexora panel.
+#
+# The target is the panel's compose service name, which is how this overlay
+# reaches it without the panel publishing anything extra to the host. If you run
+# Prometheus somewhere else, replace it with the panel's real address.
+global:
+  # Panel figures move on the scale of minutes — the host sampler behind the
+  # disk and memory series runs every five — so a faster scrape buys nothing but
+  # storage. The traffic counters are cumulative, so no sample is lost between
+  # scrapes either.
+  scrape_interval: 60s
+  scrape_timeout: 15s
+
+scrape_configs:
+  - job_name: nexora-panel
+    metrics_path: /metrics
+    # `credentials_file` rather than `credentials`, so this file can be pasted
+    # into an issue without pasting a key to your panel with it. Mint the token
+    # in Admins → API tokens with the `stats:read` scope and nothing else.
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/token
+
+    # Plain HTTP inside the compose network. If your panel terminates TLS
+    # itself (web_tls_mode is `self_signed` or `files`), switch the scheme and
+    # skip verification: the panel's certificate is issued for the name your
+    # customers use, not for the `panel` service name Prometheus dials here, so
+    # a strict check would fail on a certificate that is perfectly correct.
+    # The hop never leaves the Docker network.
+    #
+    #   scheme: https
+    #   tls_config:
+    #     insecure_skip_verify: true
+    scheme: http
+
+    static_configs:
+      - targets: ['panel:2095']
+
+    # If you moved the panel to a base path (Settings → Web), /metrics moved
+    # with it. Uncomment and set it:
+    #
+    # metrics_path: /your-base-path/metrics

@@ -168,12 +168,12 @@ those pairs when you save them rather than dropping them silently later.
 
 ## Documentation
 
-| | Install | Choosing a database | Links and subscriptions |
-| --- | --- | --- | --- |
-| English | [install](docs/en/install.md) | [database](docs/en/database.md) | [subscriptions](docs/en/subscriptions.md) |
-| فارسی | [نصب](docs/fa/install.md) | [دیتابیس](docs/fa/database.md) | [اشتراک‌ها](docs/fa/subscriptions.md) |
-| Русский | [установка](docs/ru/install.md) | [база данных](docs/ru/database.md) | [подписки](docs/ru/subscriptions.md) |
-| 中文 | [安装](docs/zh/install.md) | [数据库](docs/zh/database.md) | [订阅](docs/zh/subscriptions.md) |
+| | Install | Choosing a database | Links and subscriptions | Monitoring |
+| --- | --- | --- | --- | --- |
+| English | [install](docs/en/install.md) | [database](docs/en/database.md) | [subscriptions](docs/en/subscriptions.md) | [monitoring](docs/en/monitoring.md) |
+| فارسی | [نصب](docs/fa/install.md) | [دیتابیس](docs/fa/database.md) | [اشتراک‌ها](docs/fa/subscriptions.md) | [پایش](docs/fa/monitoring.md) |
+| Русский | [установка](docs/ru/install.md) | [база данных](docs/ru/database.md) | [подписки](docs/ru/subscriptions.md) | [мониторинг](docs/ru/monitoring.md) |
+| 中文 | [安装](docs/zh/install.md) | [数据库](docs/zh/database.md) | [订阅](docs/zh/subscriptions.md) | [监控](docs/zh/monitoring.md) |
 
 ## Releases
 

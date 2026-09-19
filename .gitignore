@@ -7,3 +7,9 @@ docker/*/bin/
 docker/*/sub-themes/
 docker/*/certs/
 docker/*/.env
+
+# The Prometheus scrape credential: an API token for this install's /metrics.
+# The scrape config beside it is meant to be shareable; this is not.
+monitoring/prometheus/token
+# Monitoring state if the overlay is run from inside a clone.
+monitoring/data/

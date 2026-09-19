@@ -1,0 +1,83 @@
+# Prometheus and Grafana, beside an existing Nexora panel stack.
+#
+# This is an **overlay**, not a stack of its own: it adds two services to the
+# compose file you already run, so they join the panel's network and can reach
+# it by service name without publishing the panel's port to them.
+#
+#   1. Copy this whole `monitoring/` directory next to your docker-compose.yml.
+#   2. Put a panel API token in monitoring/prometheus/token (see below).
+#   3. cp monitoring/.env.example .env   # or merge it into the .env you have
+#   4. docker compose -f docker-compose.yml -f monitoring/docker-compose.monitoring.yml up -d
+#
+# Step 4 is the whole thing, and it is the command to keep using from then on —
+# a plain `docker compose up -d` without both -f files would tear the two new
+# services down again, because compose treats the files it is given as the whole
+# description of the project.
+#
+# The token: in the panel, Admins → API tokens → add one with the `stats:read`
+# scope and nothing else, then write just the token into
+# monitoring/prometheus/token with no trailing newline fuss (Prometheus trims
+# it). It is a file rather than a value in prometheus.yml because a config file
+# gets pasted into issues and chat messages; a credential should not travel with
+# it. .gitignore already excludes it.
+#
+# There is no unauthenticated mode for /metrics: the document names every node
+# and its address.
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    container_name: nexora-prometheus
+    # No `ports:` on purpose. Prometheus has no authentication of its own, and
+    # what it holds is this panel's whole operational picture — publishing it
+    # would undo the reason /metrics needs a token. Grafana reaches it inside
+    # the compose network; if you want to look at Prometheus directly, tunnel
+    # to it (`ssh -L 9090:localhost:9090`) after adding a temporary mapping, or
+    # put your own authenticating proxy in front.
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      # Panel metrics are cheap — a bounded handful of series per node — so a
+      # year of them is a small database and worth keeping: "the disk has been
+      # filling since we added that template" is a question about months.
+      - --storage.tsdb.retention.time=365d
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/token:/etc/prometheus/token:ro
+      - promdata:/prometheus
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    container_name: nexora-grafana
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?set GRAFANA_PASSWORD in .env}
+      # This Grafana exists to show one panel's fleet. Nobody should be able to
+      # make themselves an account on it.
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      # Set this to the address you will actually open Grafana at, including a
+      # sub-path if you put it behind a reverse proxy, or its links and its
+      # OAuth redirects point at localhost.
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000}
+    volumes:
+      # Provisioning: the datasource and the dashboard are configuration, not
+      # something to click through after every fresh start. The dashboard file
+      # is read-only inside the container, so edits in the UI are per-session —
+      # copy the JSON back into monitoring/grafana/dashboards/ to keep one.
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafanadata:/var/lib/grafana
+    ports:
+      # Bound to loopback by default: Grafana has a password, but this is one
+      # more login on a public address and it is not the one you are selling.
+      # Reach it with `ssh -L 3000:localhost:3000 you@your-server` and open
+      # http://localhost:3000. Change to "3000:3000" only behind a reverse proxy
+      # that terminates TLS, and set GRAFANA_ROOT_URL to match.
+      - "127.0.0.1:3000:3000"
+
+volumes:
+  promdata:
+  grafanadata:
