@@ -61,6 +61,23 @@ a node under load takes the panel down with it. The
 [install guide](docs/en/install.md#panel-and-node-on-the-same-server) has the
 two-step start and the caveats.
 
+## Updating
+
+The panel updates itself. It checks once a day whether a newer release exists
+and shows a banner when there is one; **Settings → Panel update** takes a
+backup, downloads the release, checks it against the checksum published with
+it, runs it once to be sure it starts on this machine, swaps it in and
+restarts — you stay logged in. If the new build does not come up, the previous
+binary is put back automatically within about ten seconds. The database is not
+rolled back, because migrations only go forward: the backup taken as the first
+step is the way back from one.
+
+A Docker install cannot replace its own image and the page says so; it updates
+with `docker compose pull && docker compose up -d`. Any install also updates by
+running the installer again, which is what to do where the panel cannot update
+itself. The daily check is one outbound request and can be switched off
+(`nexora-panel config set update_check false`) without disabling the button.
+
 ## IPv6
 
 The panel binds `[::]:2095` by default, which serves IPv4 as well — a v4-only,
@@ -115,6 +132,19 @@ nexora-panel config set backup_passphrase "a long passphrase"   # optional
 ```
 
 ## Accounts and access
+
+**Roles** decide what each operator can do. Three ship with the panel — main
+admin, operator, reseller — and a custom role starts from one of them and takes
+permissions away. It can never add any: the panel refuses to store a role
+granting a permission you do not hold yourself. A role can also carry limits
+that are not permissions — how many users an account on it may own, the largest
+device limit it may hand out, the longest plan it may sell.
+
+Two different questions decide what an account reaches: **permissions decide
+which pages**, and **ownership decides which users** — a reseller sees the
+accounts it owns whatever its permissions say. One account **owns** the panel:
+it cannot be deleted or demoted, and only it can hand the panel to another main
+admin. See [operators and roles](docs/en/install.md#operators-and-roles).
 
 Operator accounts are the panel's, not the browser's. Sessions are stored, so a
 restart or an update logs nobody out, and each operator can see their own open
@@ -177,12 +207,13 @@ those pairs when you save them rather than dropping them silently later.
 
 ## Releases
 
-| | |
-| --- | --- |
-| Linux | `nexora-panel-linux-{amd64,arm64,armv5,armv6,armv7,386,s390x,riscv64}.tar.gz` |
-| Windows | `nexora-panel-windows-{amd64,arm64}.zip` |
+`nexora-panel-linux-{amd64,arm64,armv5,armv6,armv7,386,s390x,riscv64}.tar.gz`,
+each with its `.sha256` beside it — the checksum the panel's own update checks a
+download against. Every archive holds the `nexora-panel` binary and the systemd
+unit.
 
-Each archive contains the `nexora-panel` binary and, on Linux, the systemd unit.
+Linux only, and the nodes too: the panel is a service under systemd and a node
+wraps a Linux data plane, so there is nothing a Windows build would slot into.
 
 The panel and the node are versioned independently — a panel `v1.4.0` does not
 imply a node `v1.4.0`. Any node release is driven by any panel release of the

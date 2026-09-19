@@ -218,6 +218,46 @@ leaves the machine and needs no firewall rule.
 
 ## Updating
 
+The panel checks once a day whether a newer release exists and shows a banner
+when there is one. **Settings → Panel update** has the whole story: the
+installed version against the newest release, how this panel was installed, and
+— on a systemd install — a button that does the upgrade:
+
+1. takes a database backup into your backup directory,
+2. downloads the release and checks it against the checksum published with it,
+3. runs the downloaded binary once, to be sure it is a panel that starts on
+   this machine,
+4. swaps it in, keeping the old one at
+   `/opt/nexora-panel/nexora-panel.previous`,
+5. restarts. You stay logged in; the panel is unreachable for a few seconds and
+   the page says when it is back.
+
+If the new build does not come up, the previous binary is put back
+automatically — within about ten seconds, not minutes. **The database is not
+rolled back**: migrations only ever go forward. So if something looks wrong
+after an upgrade, the backup taken in step 1 is the way back, under
+**Settings → Backup**.
+
+A Docker install cannot replace its own image, and the page says so rather than
+half-trying. Update it the usual way:
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+The daily check is one request to this repository's releases, which tells
+GitHub your server's address. Turn it off with the switch on that page, or from
+the command line:
+
+```bash
+nexora-panel config set update_check false
+```
+
+The button on the page still works with the check off — that setting is about
+what the panel does on its own, not about what you may ask it for.
+
+### From the command line
+
 Run the installer again. It detects the existing install and updates in place:
 
 ```bash
@@ -228,12 +268,6 @@ It stops the service, backs up a SQLite database to `nexora.db.bak`, keeps the
 previous binary at `/opt/nexora-panel/nexora-panel.previous`, migrates, and
 starts again. Your `config.json`, settings and admin accounts are untouched. If
 you use PostgreSQL, take your own dump first.
-
-Docker updates the usual way:
-
-```bash
-docker compose pull && docker compose up -d
-```
 
 ## Locked out?
 
@@ -270,13 +304,16 @@ config file, so these work from any directory. In Docker, prefix them with
 address:
 
 ```bash
-nexora-panel admin list                        # which accounts exist, and which is the main one
-nexora-panel admin reset-password              # the main admin; the password is typed in, not echoed
+nexora-panel admin list                        # which accounts exist, and which one owns the panel
+nexora-panel admin reset-password              # the owner; the password is typed in, not echoed
 nexora-panel admin reset-password -user alice  # any other account
 ```
 
-With no `-user` it takes the only main admin, and refuses — naming them — if
-there is more than one. The new password is asked for twice and never echoed;
+With no `-user` it takes the panel's **owner** — the one account that cannot be
+deleted or demoted, which `nexora-panel admin list` marks, so "the main admin"
+has a single answer even when there are several. On an install that predates the
+owner it falls back to the only main admin, and refuses — naming them — if there
+is more than one. The new password is asked for twice and never echoed;
 `-pass` sets it in one go for an unattended install, at the price of leaving it
 in your shell history.
 
@@ -373,6 +410,53 @@ DNS record a per-customer hostname needs, and why the panel refuses to front a
 REALITY or Hysteria inbound), naming the entries from a template, and the one
 client setting — **Mux**, in Xray-based apps — that silently breaks these
 configurations.
+
+## Operators and roles
+
+**Settings → Admins** creates operator accounts; **Roles** decides what each one
+can do. Three roles ship with the panel and cover most installs:
+
+| Role | What it is for |
+| --- | --- |
+| Main admin | Runs everything, including the panel's own administration: operators, roles, API tokens, the licence, backups and the security settings. |
+| Operator | Runs the service: users, nodes, templates, the pool, certificates and settings — but not the panel's administration. |
+| Reseller | Owns a book of users and nothing else. Its traffic allowance, expiry and user cap are set on the account. |
+
+A **custom role** starts from one of those three and takes permissions away. It
+can never add any: the panel refuses to store a role granting a permission you
+do not hold yourself, and refuses to put an account on one. So an "operator who
+may not touch the nodes" is a role, and an "operator who may also manage the
+licence" is not.
+
+Two things decide what an account reaches, and they are different questions:
+
+- **Permissions decide which pages.** A role that is not given "Configure nodes"
+  can open the node list if it was given "See nodes", and every button on it
+  answers "your role is missing the nodes:write permission".
+- **Ownership decides which users.** A reseller sees the accounts it owns and no
+  others — that is a property of being a reseller, not a permission. Giving a
+  reseller role "See users" does not show it anybody else's customers.
+
+A role can also carry **limits**, which are not permissions: how many users an
+account on it may own, the highest device limit it may give a user, and the
+longest plan it may sell. `0` means no limit. A limit is a ceiling over the
+account's own allowance — it never raises one — and a user left with *no* device
+limit at all is refused rather than quietly capped, because "no limit" is a real
+choice here and it should not be made for you.
+
+Editing a role signs out everybody holding it; they get the new permissions on
+their next login. A role held by any account cannot be deleted, and the refusal
+names the accounts so you know where to look. The three built-in roles are
+always present and cannot be edited or deleted — only their limits can be set.
+
+**The owner.** One account owns the panel. It cannot be deleted or demoted, and
+it is the only account that can hand the panel to another main admin (the crown
+icon in the admin list). Handing over is a *transfer*: you stay a main admin,
+but from then on only the new owner can hand it on. On an existing install the
+owner is the oldest main admin, chosen for you — nothing to set up.
+
+The owner is also what `nexora-panel admin reset-password` resolves to when you
+give it no account name, which is why `nexora-panel admin list` marks it.
 
 ## Monitoring
 
