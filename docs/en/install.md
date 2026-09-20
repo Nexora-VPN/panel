@@ -111,6 +111,31 @@ Saving restarts the panel onto the address you just described, and the browser
 follows it. With a self-signed certificate your browser warns once — accept it
 and continue.
 
+## Getting around it
+
+Two things worth knowing on your first day, because neither is where you would
+look for it.
+
+**Press Ctrl-K** (Cmd-K on a Mac) anywhere in the panel, or click the magnifier
+in the header. One box searches every page, every "new …" form, and your users
+— by name, by group, and **by subscription id**, which is what turns "a
+customer sent me this link and nothing else" into one paste. Arrows move, Enter
+opens, Escape puts you back exactly where you were. A plain `/` opens it too,
+whenever you are not typing into a field.
+
+**Install the panel as an app.** In Chrome, Edge or Android's browser, the
+address bar offers to install it; on an iPhone use Share → Add to Home Screen.
+It then opens in its own window with no address bar, and works at a base path
+like `/panel` exactly as it does at the root. It is the same panel in a
+different frame: there is no offline mode, because every page of a control
+plane is a live read of a fleet that changes while you are looking at it.
+Installing needs HTTPS — a panel reached over plain `http://` on an address
+simply will not offer it.
+
+The colour and the density are in the theme menu beside the language switch:
+five palettes, and a compact mode that fits noticeably more rows on a laptop
+screen. Both are per browser, not per account.
+
 ## Disguising the panel
 
 A secret base path already keeps a scanner that finds your port from finding a

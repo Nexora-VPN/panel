@@ -61,6 +61,19 @@ a node under load takes the panel down with it. The
 [install guide](docs/en/install.md#panel-and-node-on-the-same-server) has the
 two-step start and the caveats.
 
+## Getting around it
+
+**Ctrl-K** (Cmd-K on a Mac) opens one box that searches every page, every
+"new …" form and your users — by name, by group and by **subscription id**,
+which is what turns "a customer sent me this link and nothing else" into one
+paste. Escape puts you back where you were.
+
+The panel also **installs as an app**: Chrome, Edge and Android offer it from
+the address bar, iOS through Share → Add to Home Screen, and it works the same
+at a base path as at the root. Installing needs HTTPS. There is no offline
+mode and there deliberately never will be — every page here is a live read of
+a fleet that changes while you are looking at it.
+
 ## Updating
 
 The panel updates itself. It checks once a day whether a newer release exists
