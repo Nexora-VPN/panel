@@ -156,6 +156,13 @@ key on the decoy instead of on the silence — a better fingerprint than the one
 it replaced. Put something there that suits the address: a landing page, a
 company site, a copy of whatever you would host anyway.
 
+**Put a `404.html` in it too.** Any path in that directory with no file behind
+it answers 404, and without a `404.html` what it answers is the Go web server's
+own `404 page not found` in plain text — which identifies the software on the
+first probe a scanner sends, and that is the signature the disguise is here to
+remove. With a `404.html` in the directory it is served instead, with the same
+404 status. A directory without one behaves exactly as it did before.
+
 Three things it does not do, each on purpose:
 
 - **It does not touch the API.** A request the panel accepted is the panel's, so
