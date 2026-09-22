@@ -1,21 +1,9 @@
 #!/usr/bin/env bash
-# Nexora Panel installer and updater.
+# Nexora Panel installer and updater. Re-run it to update in place.
 #
 #   bash <(curl -fsSL https://raw.githubusercontent.com/nexora-vpn/panel/main/install.sh)
-#
-# It asks nothing. The only choice it makes is the database — SQLite by default,
-# PostgreSQL with --postgres — and that choice is the one thing that cannot be
-# made later from the panel, because the panel needs a database to have settings
-# at all. Everything else (the main admin, the port, the secret paths, HTTPS) is
-# chosen in the setup wizard the panel opens on its first start.
-#
-# Run it again on a server that already has Nexora and it updates in place,
-# keeping the database and config.json untouched.
 set -euo pipefail
 
-# Panel and node are released independently, so each has its own repository and
-# its own "latest". The panel installer needs both: it installs the panel, and it
-# stages node binaries for the node installers the panel serves.
 PANEL_REPO="nexora-vpn/panel"
 NODE_REPO="nexora-vpn/node"
 INSTALL_DIR="/opt/nexora-panel"   # binary + config.json
@@ -31,10 +19,7 @@ PG_DB="nexora"
 PG_USER="nexora"
 
 die() { echo "error: $*" >&2; exit 1; }
-# `nexora-panel version` prints "nexora-panel X.Y.Z"; only the number is wanted.
 panel_version() { "${INSTALL_DIR}/nexora-panel" version 2>/dev/null | awk '{print $2}'; }
-# The binary finds /opt/nexora-panel/config.json on its own; this is just the
-# installed path, for use before the PATH symlink is in place.
 nexora_panel() { "${INSTALL_DIR}/nexora-panel" "$@"; }
 say() { printf '\033[1;35m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m warn\033[0m %s\n' "$*" >&2; }
@@ -88,16 +73,10 @@ detect_arch() {
 }
 ARCH="$(detect_arch)"
 
-# A release tag is vX.Y.Z; accept it written either way.
 [[ -n "$PANEL_VERSION" && "$PANEL_VERSION" != v* ]] && PANEL_VERSION="v${PANEL_VERSION}"
 [[ -n "$NODE_VERSION" && "$NODE_VERSION" != v* ]] && NODE_VERSION="v${NODE_VERSION}"
 
-# asset_url composes a release download URL for one repository. Without an
-# explicit version this is the "latest" alias, which GitHub resolves only to a
-# full release — never to a prerelease. NEXORA_DOWNLOAD_BASE points the installer
-# at a single mirror holding both products' assets instead, for hosts that cannot
-# reach GitHub; asset names are unique across the two repositories, so one flat
-# directory is enough.
+# NEXORA_DOWNLOAD_BASE points at a flat mirror instead of GitHub.
 asset_url() {
   local repo="$1" version="$2" name="$3"
   if [[ -n "${NEXORA_DOWNLOAD_BASE:-}" ]]; then
@@ -127,8 +106,7 @@ fi
 
 # --- postgres -----------------------------------------------------------------
 
-# pkg_install writes everything to stderr: setup_postgres returns the DSN on
-# stdout, and a chatty package manager would end up inside it.
+# Everything to stderr: setup_postgres returns the DSN on stdout.
 pkg_install() {
   if command -v apt-get >/dev/null; then
     DEBIAN_FRONTEND=noninteractive apt-get update -qq >&2
@@ -144,8 +122,7 @@ pkg_install() {
   fi
 }
 
-# rand_pass returns a 32-character hex secret. It avoids `tr < /dev/urandom`,
-# whose SIGPIPE trips `set -o pipefail`.
+# Avoids `tr < /dev/urandom`, whose SIGPIPE trips `set -o pipefail`.
 rand_pass() {
   if command -v openssl >/dev/null; then
     openssl rand -hex 16
@@ -154,10 +131,7 @@ rand_pass() {
   fi
 }
 
-# setup_postgres installs the server, creates the role and database, and returns
-# the DSN on stdout. Everything it does is idempotent: an update re-runs it and
-# finds the role already there, so the stored password is reused rather than
-# rotated out from under a working panel.
+# Idempotent: an update must not rotate the password under a working panel.
 setup_postgres() {
   if ! command -v psql >/dev/null; then
     say "installing PostgreSQL" >&2
@@ -175,8 +149,6 @@ setup_postgres() {
     systemctl enable --now postgresql.service >/dev/null 2>&1 ||
     die "could not start PostgreSQL"
 
-  # Only ever reached on a fresh install (config.json is what records the DSN,
-  # and it is never rewritten), so these are new credentials by definition.
   local pass
   pass="$(rand_pass)"
 
@@ -187,9 +159,8 @@ setup_postgres() {
   su - postgres -c "psql -tAc \"SELECT 1 FROM pg_database WHERE datname='${PG_DB}'\"" | grep -q 1 ||
     su - postgres -c "createdb -O ${PG_USER} ${PG_DB}" >/dev/null
 
-  # The panel connects over loopback TCP with a password. Some distributions
-  # default that to ident/peer authentication, which no password can satisfy, so
-  # make the one rule the panel needs explicit.
+  # Some distributions default loopback TCP to peer auth, which no password
+  # can satisfy.
   local hba
   hba="$(su - postgres -c 'psql -tAc "SHOW hba_file"' | tr -d '[:space:]')"
   if [[ -f "$hba" ]] && ! grep -qE "^host +${PG_DB} +${PG_USER} +127\.0\.0\.1/32" "$hba"; then
@@ -198,6 +169,63 @@ setup_postgres() {
   fi
 
   echo "host=127.0.0.1 port=5432 user=${PG_USER} password=${pass} dbname=${PG_DB} sslmode=disable"
+}
+
+# --- listen port --------------------------------------------------------------
+
+# Below the ephemeral range: above it, a restart can find its number held by an
+# outbound socket and fail to bind.
+ephemeral_low() {
+  local low=""
+  if [[ -r /proc/sys/net/ipv4/ip_local_port_range ]]; then
+    low="$(awk '{print $1}' /proc/sys/net/ipv4/ip_local_port_range 2>/dev/null || true)"
+  fi
+  if [[ "$low" =~ ^[0-9]+$ ]] && [[ "$low" -gt 1024 ]]; then
+    echo "$low"
+  else
+    echo 32768   # the kernel default
+  fi
+}
+
+listening_ports() {
+  if command -v ss >/dev/null; then
+    ss -ltn 2>/dev/null | awk 'NR>1 {print $4}'
+  elif command -v netstat >/dev/null; then
+    netstat -ltn 2>/dev/null | awk '{print $4}'
+  fi
+}
+
+# A here-string, not a pipe: `grep -q` stops at the first match, and the SIGPIPE
+# that kills the left side reads as failure under pipefail — "free" for a port
+# that is anything but.
+port_in_use() {
+  local port="$1" listeners
+  listeners="$(listening_ports || true)"
+  if grep -qE "[:.]${port}\$" <<<"$listeners"; then
+    return 0
+  fi
+  if (exec 3<>"/dev/tcp/127.0.0.1/${port}") 2>/dev/null; then
+    return 0
+  fi
+  return 1
+}
+
+# Two $RANDOMs: one only reaches 32767, half the range.
+pick_port() {
+  local low=10000 high span port attempt
+  high=$(( $(ephemeral_low) - 1 ))
+  if [[ $high -le $low ]]; then
+    high=32767
+  fi
+  span=$(( high - low + 1 ))
+  for attempt in $(seq 50); do
+    port=$(( low + ((RANDOM << 15 | RANDOM) % span) ))
+    if ! port_in_use "$port"; then
+      echo "$port"
+      return 0
+    fi
+  done
+  return 1
 }
 
 # --- install ------------------------------------------------------------------
@@ -213,10 +241,7 @@ else
 fi
 
 mkdir -p "$INSTALL_DIR" "${STATE_DIR}/bin" "${STATE_DIR}/sub-themes" "${STATE_DIR}/backups"
-# A backup archive holds every credential the panel has — admin password hashes,
-# user UUIDs, certificate private keys, the mTLS client key. The panel creates
-# this directory 0700 on its own; it is created here too so that an operator who
-# looks before taking the first backup finds it, and finds it closed.
+# Backups hold every credential the panel has.
 chmod 0700 "${STATE_DIR}/backups"
 
 TMP="$(mktemp -d)"
@@ -227,29 +252,19 @@ curl -fsSL "$(asset_url "$PANEL_REPO" "$PANEL_VERSION" "nexora-panel-${ARCH}.tar
   die "could not download the panel for ${ARCH}"
 tar -C "$TMP" -xzf "${TMP}/panel.tar.gz"
 
-# The running binary is kept until the new one is in place and migrated, so a
-# failed update can be rolled back by hand.
 if [[ $UPDATING -eq 1 ]]; then
   cp -f "${INSTALL_DIR}/nexora-panel" "${INSTALL_DIR}/nexora-panel.previous"
 fi
 install -m 0755 "${TMP}/nexora-panel/nexora-panel" "${INSTALL_DIR}/nexora-panel"
 
-# Node binaries are served to node installers straight from the panel
-# (bin/nexora-node-linux-<arch> under its working directory), so adding the first
-# node works without the operator staging anything. A missing arch is not fatal:
-# the panel simply cannot offer that one.
-# resolve_node_version turns an empty NODE_VERSION into the tag GitHub's
-# "latest" alias points at, by following the redirect it answers with. The panel
-# cannot read a release tag out of a binary, so what is staged has to be recorded
-# here or its version is lost — and the panel's automatic node installer shows
-# the operator which version it is about to install.
+# The panel serves these to node installers from bin/. The tag comes from the
+# redirect "latest" answers with: a binary carries no release tag.
 resolve_node_version() {
   [[ -n "$NODE_VERSION" ]] && { echo "$NODE_VERSION"; return; }
   [[ -n "${NEXORA_DOWNLOAD_BASE:-}" ]] && return 0   # a mirror has no tag to ask for
   local url
   url="$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
     "https://github.com/${NODE_REPO}/releases/latest" 2>/dev/null || true)"
-  # .../releases/tag/vX.Y.Z — anything else and we simply do not know.
   case "$url" in
     */releases/tag/*) echo "${url##*/}" ;;
   esac
@@ -261,8 +276,6 @@ for node_arch in amd64 arm64; do
   if curl -fsSL "$(asset_url "$NODE_REPO" "$NODE_VERSION" "nexora-node-linux-${node_arch}.tar.gz")" -o "${TMP}/node.tar.gz" 2>/dev/null; then
     tar -C "$TMP" -xzf "${TMP}/node.tar.gz"
     install -m 0755 "${TMP}/nexora-node/nexora-node" "${STATE_DIR}/bin/nexora-node-linux-${node_arch}"
-    # The sidecar is the panel's only way to name the version it serves. A stale
-    # one would be worse than none, so it is removed when the tag is unknown.
     if [[ -n "$NODE_TAG" ]]; then
       printf '%s\n' "$NODE_TAG" > "${STATE_DIR}/bin/nexora-node-linux-${node_arch}.version"
     else
@@ -273,8 +286,7 @@ for node_arch in amd64 arm64; do
   fi
 done
 
-# config.json holds the database connection and nothing else. On an update it is
-# never touched: it is where the operator's DSN lives.
+# Never touched on an update: the operator's DSN lives here.
 if [[ ! -f "${INSTALL_DIR}/config.json" ]]; then
   if [[ $USE_POSTGRES -eq 1 ]]; then
     DSN="$(setup_postgres)"
@@ -303,16 +315,12 @@ elif [[ $USE_POSTGRES -eq 1 ]]; then
   warn "config.json already exists; leaving the database configuration alone"
 fi
 
-# A SQLite database is one file, so a copy before the migration is a complete,
-# cheap rollback point. PostgreSQL is the operator's to dump.
+# One file, so a copy is a complete rollback point; PostgreSQL is not.
 if [[ $UPDATING -eq 1 ]] && [[ -f "${STATE_DIR}/nexora.db" ]]; then
   cp -f "${STATE_DIR}/nexora.db" "${STATE_DIR}/nexora.db.bak"
   say "database backed up to ${STATE_DIR}/nexora.db.bak"
 fi
 
-# A failed migration on an update leaves the service down with a binary that
-# cannot read the database, so put the old one back and say so plainly rather
-# than leaving the operator with a panel that will not start.
 rollback() {
   [[ $UPDATING -eq 1 ]] || return 0
   warn "restoring the previous version"
@@ -324,6 +332,20 @@ say "migrating the database"
 if ! ( cd "$STATE_DIR" && "${INSTALL_DIR}/nexora-panel" migrate -config "${INSTALL_DIR}/config.json" ); then
   rollback
   die "the database migration failed; nothing was changed"
+fi
+
+# Once, on a panel that has never been configured — `config get` failing is what
+# says so. Unset means the binary's own [::]:2095, so a failure still comes up.
+if [[ $UPDATING -eq 0 ]] && ! nexora_panel config get web_listen_port >/dev/null 2>&1; then
+  if LISTEN_PORT="$(pick_port)"; then
+    if nexora_panel config set web_listen_port "$LISTEN_PORT" >/dev/null 2>&1; then
+      say "the panel will listen on port ${LISTEN_PORT}"
+    else
+      warn "could not save the chosen port; the panel will use its default"
+    fi
+  else
+    warn "found no free port to give the panel; it will use its default"
+  fi
 fi
 
 cat > "$UNIT" <<EOF
@@ -345,16 +367,11 @@ LimitNOFILE=1048576
 WantedBy=multi-user.target
 EOF
 
-# On PATH, so the rescue commands in the documentation can be typed verbatim.
-# The binary finds /opt/nexora-panel/config.json on its own, so they need no
-# flags either.
 ln -sf "${INSTALL_DIR}/nexora-panel" /usr/local/bin/nexora-panel 2>/dev/null || true
 
 systemctl daemon-reload
 systemctl enable --now "$SERVICE" >/dev/null
 
-# Wait for the unit to actually come up rather than declaring success on the
-# strength of `systemctl start` returning.
 for _ in $(seq 30); do
   systemctl is-active --quiet "$SERVICE" && break
   sleep 0.5
@@ -374,26 +391,18 @@ fi
 
 # --- first run ----------------------------------------------------------------
 
-# The setup token authorises creating the main admin, and the panel answers
-# nothing at all without it, so it is printed once, here.
 TOKEN="$(nexora_panel setup-token 2>/dev/null || true)"
 PORT="$(nexora_panel config get web_listen_port 2>/dev/null || echo 2095)"
 [[ -n "$PORT" ]] || PORT=2095
 
-# Which address reaches this server is something only the operator knows: a VPS
-# has its public address on an interface, but a host behind NAT or inside a
-# container sees addressing no client will ever use. So print a link for every
-# address found locally *and* one for the address the internet sees this host
-# as, and let the operator pick the one that works.
-# public_ip asks the internet what address it sees this host as. Several
-# services, because any one of them can be blocked or down.
+# Only the operator knows which address reaches this server, so every candidate
+# is printed. Several lookup services: any one can be blocked or down.
 public_ip() {
   local url ip
   for url in https://api.ipify.org https://ifconfig.me/ip https://icanhazip.com; do
     ip="$(curl -fsS --max-time 5 "$url" 2>/dev/null || true)"
     ip="${ip//[[:space:]]/}"
-    # Only accept something shaped like an address: a blocked request often
-    # answers with an HTML error page instead of failing outright.
+    # A blocked request often answers with an HTML error page, not a failure.
     if [[ "$ip" =~ ^[0-9a-fA-F:.]+$ ]] && [[ -n "$ip" ]]; then
       echo "$ip"
       return 0
@@ -402,7 +411,6 @@ public_ip() {
   return 1
 }
 
-# local_ips lists this machine's own global addresses.
 local_ips() {
   if command -v ip >/dev/null; then
     ip -o addr show scope global 2>/dev/null | awk '{split($4,a,"/"); print a[1]}' || true
@@ -411,8 +419,6 @@ local_ips() {
   fi
 }
 
-# setup_link prints the wizard URL for one address, bracketing IPv6 so the line
-# can be copied as it stands.
 setup_link() {
   local addr="$1"
   if [[ "$addr" == *:* ]]; then
@@ -438,6 +444,11 @@ if [[ -n "$TOKEN" ]]; then
     printf '    %s\n' "$(setup_link "$addr")"
   done < <(local_ips)
   echo
+  if [[ -n "${LISTEN_PORT:-}" && "${LISTEN_PORT:-}" == "$PORT" ]]; then
+    echo "  Port ${PORT} was picked at random and is free on this host — open it in"
+    echo "  the firewall if one is running. The wizard can move it before you finish."
+    echo
+  fi
   echo "  Until setup is finished the panel answers nothing else, and nothing at"
   echo "  all without that token — so keep the link private. To print it again:"
   echo

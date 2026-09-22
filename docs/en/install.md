@@ -15,9 +15,10 @@ first time you visit the panel.
 - A 64-bit Linux server with systemd (Debian 11+, Ubuntu 20.04+, RHEL 9+,
   or similar). 32-bit ARM and x86 are supported too.
 - Root access.
-- An open TCP port for the panel (2095 by default). The panel binds the IPv6
-  wildcard, which serves IPv4 as well, so a v4-only, v6-only or dual-stack
-  server all work unchanged.
+- An open TCP port for the panel. The installer picks a free high port at
+  random and prints it with the setup link; the Docker image uses 2095. The
+  panel binds the IPv6 wildcard, which serves IPv4 as well, so a v4-only,
+  v6-only or dual-stack server all work unchanged.
 
 ## Install
 
@@ -53,8 +54,13 @@ you on either backend, and the migration steps.
 The installer ends by printing a link like:
 
 ```
-http://203.0.113.10:2095/setup?t=9f3c1ad2…
+http://203.0.113.10:28431/setup?t=9f3c1ad2…
 ```
+
+That port is different on every install: the installer picks a free one at
+random the first time, so a panel that nobody has set up yet is not waiting on
+the number a scanner sweeps for. If a firewall is running, open that port. The
+wizard can move it before you finish, and **Settings → Panel** afterwards.
 
 Open it. That token authorises creating the main admin account, so treat it like
 a password and do not paste it anywhere public. It stops working the moment
@@ -71,15 +77,16 @@ VPS that is usually the public one, on a container host most of the others are
 virtual bridge addressing that reaches nothing.
 
 An IPv6 address appears in those links bracketed, which is what a URL needs —
-`http://[2001:db8::10]:2095/setup?t=…`. Paste it whole; a browser will not
+`http://[2001:db8::10]:28431/setup?t=…`. Paste it whole; a browser will not
 accept it without the brackets.
 
 If you lose the links, print the token again on the server and rebuild a URL
 around it:
 
 ```bash
-nexora-panel setup-token
-# → 9f3c1ad2…   then open http://YOUR-SERVER:2095/setup?t=9f3c1ad2…
+nexora-panel setup-token          # → 9f3c1ad2…
+nexora-panel config get web_listen_port
+# → 28431       then open http://YOUR-SERVER:28431/setup?t=9f3c1ad2…
 ```
 
 The wizard collects everything in one form and saves it in one step:
@@ -373,11 +380,12 @@ back inside.
 
 ## IPv6
 
-Nothing here needs configuring for it. The panel listens on `[::]:2095` by
-default, which on a dual-stack host answers IPv4 too; a host with IPv6 switched
-off cannot bind that and the panel falls back to `0.0.0.0:2095` by itself. To
-bind one family only, set `web_listen_ip` to a literal address (`::` or
-`0.0.0.0`, or one specific address) in the wizard or from the command line.
+Nothing here needs configuring for it. The panel listens on the IPv6 wildcard —
+`[::]` on whichever port it was given — which on a dual-stack host answers IPv4
+too; a host with IPv6 switched off cannot bind that and the panel falls back to
+`0.0.0.0` on the same port by itself. To bind one family only, set
+`web_listen_ip` to a literal address (`::` or `0.0.0.0`, or one specific
+address) in the wizard or from the command line.
 
 Nodes are the same story from the other side: a node with only an IPv6 address is
 added with its address written plainly (`2001:db8::1`, brackets optional), and

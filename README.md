@@ -93,7 +93,8 @@ itself. The daily check is one outbound request and can be switched off
 
 ## IPv6
 
-The panel binds `[::]:2095` by default, which serves IPv4 as well — a v4-only,
+The panel binds the IPv6 wildcard `[::]` by default — on a port the installer
+picks at random, or 2095 under Docker — which serves IPv4 as well, so a v4-only,
 v6-only or dual-stack server all work with no configuration (on a host with IPv6
 switched off the panel falls back to `0.0.0.0` by itself). A node with only an
 IPv6 address is added with its address written plainly, `2001:db8::1`, and the
