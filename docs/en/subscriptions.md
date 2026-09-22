@@ -247,6 +247,18 @@ customer instead of all of them.
 proxied like any other. Without it the name resolves for nobody, which looks
 exactly like the CDN refusing the connection.
 
+**On Cloudflare, mind how deep the name is.** Universal SSL — the certificate
+your zone gets for free — covers `example.com` and **one** label below it,
+`*.example.com`. It does not cover `*.cdn.example.com`, which is one label
+deeper. Everything else looks right: the record resolves, the orange cloud is
+on, the CDN is clearly in the path. What happens is that the edge has no
+certificate to present for that name, so the TLS handshake fails there and
+nothing ever reaches your node. Either put the wildcard directly under your zone
+— `*.example.com`, with the subscription domain living somewhere else — or add
+Advanced Certificate Manager or Cloudflare for SaaS, which issue for deeper
+names. Other CDNs have their own rule; check what your certificate actually
+covers before suspecting the origin.
+
 The label is derived from the customer's own subscription token, not random, so
 it is the same every time that client refreshes — a config that churned on
 every poll would be worse than no wildcard at all — and different for every
@@ -410,3 +422,17 @@ wherever you write your own setup instructions.
 
 The multiplexing setting in sing-box and Clash apps is a different feature
 entirely and is fine left alone — the warning is about the Xray one.
+
+## When a client imports the link and shows nothing
+
+v2rayNG keeps each subscription in its own group, and **Update subscription
+refreshes the group that is currently selected** — not every group the app
+holds. A customer who imports your link and then updates while a different
+group is on screen gets an empty list and **no error at all**: the subscription
+is stored, its URL is right, the toggle is on, and nothing says why there is
+nothing in it.
+
+They have to select the new group's tab first, then update. Put it in your own
+setup instructions for Xray-based clients: the symptom is indistinguishable
+from a subscription link that does not work, so it arrives in your support chat
+as one.
