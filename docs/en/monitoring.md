@@ -80,6 +80,17 @@ is perfectly valid.
 
 `/metrics` moved with it. Set `metrics_path: /your-base-path/metrics`.
 
+### If you set a panel hostname
+
+`/metrics` is inside the panel mount, so it answers only on the panel's own
+name. With **Settings → Web → Domain** (`web_domain`) set, a scrape addressed to
+the host's IP or to the `panel` service name gets what every other name gets —
+the disguise, or a 404 — and nothing in the panel log says so. The target has to
+be the hostname: give the panel service that name as a network alias in your
+compose file (`networks: { default: { aliases: [panel.example.com] } }`) and
+scrape `panel.example.com:2095`, or, with Prometheus elsewhere, scrape the real
+hostname. The port is left out of the comparison; only the name has to match.
+
 ## The token
 
 `/metrics` is authenticated like every other route, and there is no

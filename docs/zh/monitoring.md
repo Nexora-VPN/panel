@@ -73,6 +73,16 @@ Prometheus 在此拨打的 `panel` 服务名，严格校验反而会拒绝一份
 `/metrics` 也跟着移动了。设置
 `metrics_path: /你的基础路径/metrics`。
 
+### 如果你设置了面板主机名
+
+`/metrics` 在面板的挂载之内，所以只在面板自己的名字上应答。设置了
+**设置 → Web → 域名**（`web_domain`）后，发往主机 IP 或 `panel` 服务名的抓取得到
+的是其他任何名字都会得到的东西——伪装页面，或 404——面板日志里也不会有一个字。目
+标必须是主机名：在你的 compose 文件里把这个名字作为网络别名给面板服务
+（`networks: { default: { aliases: [panel.example.com] } }`），然后抓取
+`panel.example.com:2095`；如果 Prometheus 在别处，就抓取真实的主机名。比较时不看
+端口，只有名字要对上。
+
 ## 令牌
 
 `/metrics` 和其他路由一样需要认证，并且没有免认证模式。该文档会列出你运行的每个节点
