@@ -461,8 +461,39 @@ the node reads `X-Forwarded-For` for the client's address, and with it the
 address limit and the logs. **Empty means trust any** `X-Forwarded-For`, from
 anyone — a client on a directly reachable inbound can then name its own source
 address. Xray-core changed its own default to *trust none* in 26.6.22; this node
-kept the older rule, so set the field when there is a front, and leave the
-inbound behind nothing else when there is not.
+kept the older rule. **The panel fills the field for you when a front says
+which header its CDN marks requests with** (the front's *client address
+header*, `CF-Connecting-IP` for Cloudflare): every XHTTP inbound that front is
+enabled on gets it, unless the inbound sets its own. So name the header on the
+front, and leave an inbound that has no front behind nothing else.
+
+### VLESS Encryption
+
+A VLESS inbound can encrypt the VLESS stream itself — **VLESS Encryption**, on
+the inbound's **Protocol** tab — with TLS above it or with none. Two things it
+buys that nothing else on the panel does: where a CDN terminates TLS (the
+fronting on the Fronts page), the CDN sees ciphertext instead of your VLESS
+traffic; and every connection runs a post-quantum key exchange (ML-KEM-768 with
+X25519), TLS or not.
+
+Turn it on by picking an **authentication** — which key proves the server:
+**X25519** (not post-quantum) or **ML-KEM-768** (post-quantum). Pick one; the
+exchange inside each connection is post-quantum either way. The panel mints
+the key, stores the server string as the inbound's `decryption`, sends it to
+the node, and derives the client string every link and outbound carries. The
+server string never appears in a link. **Mode** (`native`, `xorpub`, `random`)
+decides how much of the handshake is hidden behind XOR streams; **ticket
+lifetime** is how long a client can reconnect without a full handshake.
+
+Two rules travel with it. **It re-issues every link**: a client holding a link
+from before the change is refused at the handshake, so set it before customers
+import the inbound, or plan a re-import — the same rule as XHTTP's advanced
+fields. And **sing-box apps cannot use it** (Karing, NekoBox, SFA — sing-box
+closed the request), so their subscriptions leave the inbound out rather than
+carry one that cannot connect; Xray-core apps (v2rayNG, v2rayN, Streisand,
+Happ) and mihomo 1.19.14+ get it in full. One more: `xtls-rprx-vision` is
+dropped on an encrypted inbound, on the node and in the links alike — the
+node's VLESS service runs vision only directly on a TLS connection.
 
 ### Port hopping
 
