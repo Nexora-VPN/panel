@@ -463,26 +463,30 @@ subscription files leave the inbound out rather than carry half of it.
 
 **One field the form does not offer** — `trusted_x_forwarded_for`, in the
 inbound's JSON under `transport` — matters the moment an XHTTP inbound sits
-behind a CDN or a reverse proxy. It lists the header names a front sets on
-every request (`CF-Connecting-IP` for Cloudflare). When one of them is present
-and its value is an IP address, the node takes the client's address — the one
-the address limit and the logs see — from that header itself; a header whose
-value is not an address (a secret your proxy adds) only marks the request, and
-the node then reads `X-Forwarded-For`. A request carrying none of them has no
-address but the connection's own. **Empty means trust any** `X-Forwarded-For`,
-from anyone — a client on a directly reachable inbound can then name its own
-source address. Xray-core changed its own default to *trust none* in 26.6.22;
-this node kept the older rule. **The panel fills the field for you when a front
-says which header its CDN marks requests with** (the front's *client address
-header*, `CF-Connecting-IP` for Cloudflare): every XHTTP inbound that front is
-enabled on gets it, unless the inbound sets its own. So name the header on the
-front, and leave an inbound that has no front behind nothing else. The address
-is then only as good as two things outside the panel: the CDN must write the
-header itself rather than pass on one the client sent (Cloudflare does; Fastly
-passes a client's `Fastly-Client-IP` on unless you configure it not to — check
-your CDN's documentation), and the node must accept connections from the CDN
-alone, since a client that reaches it directly can send the header too. With
-both, the address can back limits; without them, treat it as a hint.
+behind a CDN or a reverse proxy. It lists the request headers the node is to
+trust — normally the one a CDN writes the client's address into
+(`CF-Connecting-IP` for Cloudflare). On a request that carries one of them, the
+first one in the list it carries decides: if its value is an IP address, that
+is the client's address — the one the address limit and the logs see. A header
+whose value is not an address (a secret your proxy adds) only marks the
+request, and the node then reads the first `X-Forwarded-For` entry, which the
+client can write itself: a marker never gives an address you can rely on. A
+request carrying none of them has no address but the connection's own. **Empty
+means trust any** `X-Forwarded-For`, from anyone — a client on a directly
+reachable inbound can then name its own source address. Xray-core changed its
+own default to *trust none* in 26.6.22; this node kept the older rule. **The
+panel fills the field for you when a front says which header its CDN writes the
+client address into** (the front's *client address header*, `CF-Connecting-IP`
+for Cloudflare): every XHTTP inbound that front is enabled on gets it, unless
+the inbound sets its own. So name the header on the front, and leave an inbound
+that has no front behind nothing else. The address is then only as good as
+three things: the header's value must come from the CDN, not the client
+(Cloudflare writes it itself; Fastly passes a client's `Fastly-Client-IP` on
+unless you configure it not to — check your CDN's documentation); the node must
+accept connections from the CDN alone, since a client that reaches it directly
+can send the header too; and every front on the inbound must name the same
+header, since a CDN passes another CDN's header on unchanged. With all three,
+the address can back limits; without them, treat it as a hint.
 
 ### VLESS Encryption
 
