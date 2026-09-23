@@ -464,21 +464,30 @@ subscription files leave the inbound out rather than carry half of it.
 **One field the form does not offer** — `trusted_x_forwarded_for`, in the
 inbound's JSON under `transport` — matters the moment an XHTTP inbound sits
 behind a CDN or a reverse proxy. It lists the header names a front sets on
-every request (`CF-Connecting-IP` for Cloudflare); when one of them is present
-the node reads `X-Forwarded-For` for the client's address, and with it the
-address limit and the logs. **Empty means trust any** `X-Forwarded-For`, from
-anyone — a client on a directly reachable inbound can then name its own source
-address. Xray-core changed its own default to *trust none* in 26.6.22; this node
-kept the older rule. **The panel fills the field for you when a front says
-which header its CDN marks requests with** (the front's *client address
+every request (`CF-Connecting-IP` for Cloudflare). When one of them is present
+and its value is an IP address, the node takes the client's address — the one
+the address limit and the logs see — from that header itself; a header whose
+value is not an address (a secret your proxy adds) only marks the request, and
+the node then reads `X-Forwarded-For`. A request carrying none of them has no
+address but the connection's own. **Empty means trust any** `X-Forwarded-For`,
+from anyone — a client on a directly reachable inbound can then name its own
+source address. Xray-core changed its own default to *trust none* in 26.6.22;
+this node kept the older rule. **The panel fills the field for you when a front
+says which header its CDN marks requests with** (the front's *client address
 header*, `CF-Connecting-IP` for Cloudflare): every XHTTP inbound that front is
 enabled on gets it, unless the inbound sets its own. So name the header on the
-front, and leave an inbound that has no front behind nothing else.
+front, and leave an inbound that has no front behind nothing else. The address
+is then only as good as two things outside the panel: the CDN must write the
+header itself rather than pass on one the client sent (Cloudflare does; Fastly
+passes a client's `Fastly-Client-IP` on unless you configure it not to — check
+your CDN's documentation), and the node must accept connections from the CDN
+alone, since a client that reaches it directly can send the header too. With
+both, the address can back limits; without them, treat it as a hint.
 
 ### VLESS Encryption
 
 A VLESS inbound can encrypt the VLESS stream itself — **VLESS Encryption**, on
-the inbound's **Protocol** tab — with TLS above it or with none. Two things it
+the inbound's **Protocol** tab — inside TLS or with no TLS at all. Two things it
 buys that nothing else on the panel does: where a CDN terminates TLS (the
 fronting on the Fronts page), the CDN sees ciphertext instead of your VLESS
 traffic; and every connection runs a post-quantum key exchange (ML-KEM-768 with

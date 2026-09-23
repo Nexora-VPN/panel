@@ -39,10 +39,12 @@ machine, so it repeats per node. A front belongs to the **inbound** — the CDN
 picks which of your servers to talk to by the name it is given, so one front
 covers however many nodes serve that inbound, and it is written once.
 
-Everything below changes that list. None of it is sent to a node: link
-addresses, fronts and entry names are all read when a client fetches its
-subscription, so an edit is live on the next fetch with nothing to sync and no
-core to restart.
+Everything below changes that list. Link addresses, fronts and entry names are
+all read when a client fetches its subscription, so an edit is live on the next
+fetch with nothing to sync. The one exception is a front's *client address
+header*: a save or a delete that changes which header an XHTTP inbound trusts
+is sent to every node serving that inbound, which restarts the inbound there
+and drops its live connections. Any other edit reaches no node.
 
 ## Where the links are published
 
