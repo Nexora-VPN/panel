@@ -137,7 +137,7 @@ Grafana 方面，导入 `monitoring/grafana/dashboards/nexora-fleet.json`。它�
 | --- | --- |
 | `nexora_license_valid` | 许可证有效时为 1；免费层或任何无效状态为 0 |
 | `nexora_license_expires_at_seconds` | 到期时间。许可证不过期时该序列不存在 |
-| `nexora_license_limit{resource}` | 各资源的上限；0 表示无限制 |
+| `nexora_license_limit{resource}` | 用户（`resource="user"`）和节点（`"node"`）的上限——只有这两项受限；−1 表示无限制 |
 | `nexora_license_used{resource}` | 计入该上限的行数 |
 
 **账户**

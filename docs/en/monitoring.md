@@ -150,7 +150,7 @@ Everything below is per node, per fixed category, or fleet-wide.
 | --- | --- |
 | `nexora_license_valid` | 1 when the licence checks out, 0 on the free tier or any invalid state |
 | `nexora_license_expires_at_seconds` | expiry. Absent when the licence does not expire |
-| `nexora_license_limit{resource}` | the cap for each resource; 0 means unlimited |
+| `nexora_license_limit{resource}` | the cap on users (`resource="user"`) and nodes (`"node"`) — the only two capped; −1 means unlimited |
 | `nexora_license_used{resource}` | rows counted against that cap |
 
 **Accounts**

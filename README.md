@@ -132,8 +132,9 @@ the undo.
 **Moving to a new server:** install the panel there and, on the setup wizard's
 first screen, choose *Restore a backup* instead of filling the form. The wizard
 is the only place a restore is possible before an account exists, which is
-exactly the state a fresh install is in. Take the licence key across too — it is
-bound to the host's fingerprint, so the new server needs its own.
+exactly the state a fresh install is in. The licence comes with the backup but
+stays bound to the old host's fingerprint; **License → Move the licence to this
+machine** takes it across — see [moving to a new server](docs/en/licence.md#moving-to-a-new-server).
 
 The schedule is also settable from the command line, which is what a headless or
 scripted install wants:
@@ -212,12 +213,12 @@ those pairs when you save them rather than dropping them silently later.
 
 ## Documentation
 
-| | Install | Choosing a database | Links and subscriptions | Monitoring |
-| --- | --- | --- | --- | --- |
-| English | [install](docs/en/install.md) | [database](docs/en/database.md) | [subscriptions](docs/en/subscriptions.md) | [monitoring](docs/en/monitoring.md) |
-| فارسی | [نصب](docs/fa/install.md) | [دیتابیس](docs/fa/database.md) | [اشتراک‌ها](docs/fa/subscriptions.md) | [پایش](docs/fa/monitoring.md) |
-| Русский | [установка](docs/ru/install.md) | [база данных](docs/ru/database.md) | [подписки](docs/ru/subscriptions.md) | [мониторинг](docs/ru/monitoring.md) |
-| 中文 | [安装](docs/zh/install.md) | [数据库](docs/zh/database.md) | [订阅](docs/zh/subscriptions.md) | [监控](docs/zh/monitoring.md) |
+| | Install | Choosing a database | Links and subscriptions | Monitoring | The licence |
+| --- | --- | --- | --- | --- | --- |
+| English | [install](docs/en/install.md) | [database](docs/en/database.md) | [subscriptions](docs/en/subscriptions.md) | [monitoring](docs/en/monitoring.md) | [licence](docs/en/licence.md) |
+| فارسی | [نصب](docs/fa/install.md) | [دیتابیس](docs/fa/database.md) | [اشتراک‌ها](docs/fa/subscriptions.md) | [پایش](docs/fa/monitoring.md) | [لایسنس](docs/fa/licence.md) |
+| Русский | [установка](docs/ru/install.md) | [база данных](docs/ru/database.md) | [подписки](docs/ru/subscriptions.md) | [мониторинг](docs/ru/monitoring.md) | [лицензия](docs/ru/licence.md) |
+| 中文 | [安装](docs/zh/install.md) | [数据库](docs/zh/database.md) | [订阅](docs/zh/subscriptions.md) | [监控](docs/zh/monitoring.md) | [许可证](docs/zh/licence.md) |
 
 ## Releases
 
@@ -275,7 +276,10 @@ See `nexora-panel help` for the full command list.
 ## Licence
 
 Nexora Panel is proprietary software, licensed per installation — see
-[LICENSE](LICENSE). Without a key it runs on a **free tier** (10 inbounds, 10
-outbounds, 10 endpoints, 10 users, 10 nodes) with the full feature set, so everything
-can be evaluated before buying. A key is bound to the panel host's hardware
-fingerprint, which `nexora-panel hwid` prints.
+[LICENSE](LICENSE). Without one it runs on a **free tier** of 25 users and 1
+node with the full feature set, so everything can be evaluated before buying;
+a licence caps users and nodes and nothing else. It is bought, renewed,
+upgraded and moved from the panel's own **License** page — the licence
+installs itself, with no key to paste — and is bound to the panel host's
+hardware fingerprint, which `nexora-panel hwid` prints. See
+[the licence](docs/en/licence.md).

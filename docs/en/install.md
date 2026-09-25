@@ -729,9 +729,9 @@ link, and on the wizard's first screen follow *Moving from another server? Resto
 a backup* instead of filling the form in. This is the one place a restore works
 before an account exists — which is exactly the state a fresh install is in — and
 here the archive's own settings are taken, because the empty install has none
-worth keeping. The licence does not travel: it is bound to the host's
-fingerprint, so install your key on the new server (`nexora-panel hwid` prints
-the fingerprint it needs).
+worth keeping. The licence comes along but stays bound to the old host's
+fingerprint: **License → Move the licence to this machine** moves it, with no
+key to paste — see [moving to a new server](licence.md#moving-to-a-new-server).
 
 **From the command line**, for a headless or scripted install:
 

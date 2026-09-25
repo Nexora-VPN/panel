@@ -147,7 +147,7 @@ scrape_configs:
 | --- | --- |
 | `nexora_license_valid` | ۱ وقتی لایسنس درست است، ۰ روی سطح رایگان یا هر حالت نامعتبر |
 | `nexora_license_expires_at_seconds` | تاریخ انقضا. وقتی لایسنس منقضی نمی‌شود، اصلاً نیست |
-| `nexora_license_limit{resource}` | سقف هر منبع؛ صفر یعنی نامحدود |
+| `nexora_license_limit{resource}` | سقف کاربرها (`resource="user"`) و نودها (`"node"`) — تنها دو چیزی که سقف دارند؛ ‎−1 یعنی نامحدود |
 | `nexora_license_used{resource}` | ردیف‌هایی که در برابر آن سقف شمرده می‌شوند |
 
 **حساب‌ها**
