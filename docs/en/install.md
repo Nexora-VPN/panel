@@ -705,6 +705,11 @@ archives are on the host and survive the container. Either way, copy that
 directory somewhere else — a backup that only exists on the machine it protects
 is not a backup.
 
+**Off-site, automatically.** **Services → Backup destinations** sends every
+archive — scheduled or taken by hand — to S3-compatible storage (R2, S3, B2,
+MinIO), an SFTP server or a Telegram chat as well; a failed upload never fails
+the backup. See [panel services](services.md#backup-destinations).
+
 **Encryption.** A passphrase is optional and applies to the download, to backups
 taken on the host and to scheduled ones (scrypt + AES-GCM). The panel stores it
 only to encrypt with; it cannot recover a lost one, and an archive that cannot be
