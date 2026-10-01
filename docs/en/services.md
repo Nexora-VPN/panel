@@ -12,6 +12,7 @@ Google, Microsoft, GitHub or your own identity server. Webhooks live there too.
 | [Email](#email) | the same notices by mail |
 | [Backup destinations](#backup-destinations) | S3-compatible storage, SFTP, a Telegram chat |
 | [Single sign-on](#single-sign-on) | a login button per provider |
+| [Addons](#addons) | separate programs the panel registers |
 
 ## Off until you switch it on
 
@@ -211,3 +212,43 @@ removes the identities linked through it.
 single sign-on links and turns its two-factor authentication off, so the
 recovery command stays the one way back in — see
 [locked out](install.md#locked-out).
+
+## Addons
+
+An addon is a separate program — its own container or service, its own
+interface, its own database — that works with the panel over the network. The
+panel never runs it and never shows its pages inside its own; it keeps what it
+needs to work with it: the address, the link to its interface, a health path,
+and the two things it may be given — an **API token** and a **webhook**.
+*Services → Addons* lists them.
+
+**A signed addon** (one published by Nexora) is registered by its claim code:
+
+1. Start the addon. It shows a one-time **claim code** in its log or on its own
+   page.
+2. *Register a signed addon*, type the addon's address, *Read*. The panel reads
+   its manifest, checks Nexora's signature on it, and shows what it asks for:
+   each permission of its token with the reason, and each event its webhook
+   wants.
+3. Type the claim code and *Approve and register*. The panel creates exactly
+   that token and webhook and hands them to the addon; the addon accepts them
+   only with its code. A wrong code leaves nothing behind.
+
+**Your own addon** — a bot or a script you run yourself — is added by hand:
+*Add your own addon*, then its name, address, entry link and health path, and
+switch on an **API token** (choose its permissions) and/or a **webhook** (a
+path under the address and the events). Saving shows the token and the
+webhook's signing secret **once**; put them in your program's settings. Its
+token and webhook are edited on the same form later.
+
+**The address.** Plain `http://` is accepted only for an addon on this server,
+a private network or a Docker network. Anywhere else it must be `https://` with
+a valid certificate, because the addon's token is sent there.
+
+An addon's token and webhook also appear under *Access → API tokens* and
+*Services → Webhooks*, marked *Addon: name*, and cannot be deleted or edited
+there. **Remove** on the Addons page tells the addon first
+(`panel.addon_removed`), then deletes its token and its webhook. What the addon
+stored beside your users stays, so registering it again finds it. The events
+`panel.addon_registered` and `panel.addon_removed` can be sent to Telegram,
+email or any webhook.
