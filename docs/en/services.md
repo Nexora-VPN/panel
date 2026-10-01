@@ -73,6 +73,10 @@ never reaches its chat. A chat that cannot be reached is retried the way a
 webhook is, so notices sent while Telegram or the proxy was down arrive when it
 is back.
 
+**Deliveries** on a chat's row lists every notice sent to it — delivered, waiting
+for another try, or given up — with Telegram's answer, and *Send again* on any
+of them. Every account sees its own chats' from **My Telegram**.
+
 **Commands.** In a paired chat:
 
 | Command | Answers |
@@ -106,7 +110,8 @@ code back adds it. Nothing is ever sent to an address that has not been
 confirmed — a typo cannot send your customers' names to a stranger. The code is
 good for ten minutes and five tries. Every account can add its own from its
 menu (**My email**), and a reseller's address hears about its own customers
-only.
+only. **Deliveries** on an address's row shows what was mailed to it, as for a
+chat.
 
 ## Backup destinations
 
