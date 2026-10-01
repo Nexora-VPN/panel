@@ -241,6 +241,8 @@ path under the address and the events). Saving shows the token and the
 webhook's signing secret **once**; put them in your program's settings. Its
 token and webhook are edited on the same form later.
 
+**The entry link.** The address you register is where the *panel* reaches the addon — with Docker often a container name your browser cannot open. Set the link your browser uses with *Entry link* on the addon's row; a newer version of a signed addon keeps it.
+
 **The address.** Plain `http://` is accepted only for an addon on this server,
 a private network or a Docker network. Anywhere else it must be `https://` with
 a valid certificate, because the addon's token is sent there.
@@ -252,3 +254,23 @@ there. **Remove** on the Addons page tells the addon first
 stored beside your users stays, so registering it again finds it. The events
 `panel.addon_registered` and `panel.addon_removed` can be sent to Telegram,
 email or any webhook.
+
+**Health.** When an addon has a health path, the panel asks it every minute;
+`200` is healthy. Two failed asks in a row mark it *Unhealthy* with the last
+error on the page and raise `panel.addon_unhealthy` once; the next `200`
+brings it back with `panel.addon_recovered`. An addon without a health path
+is never asked.
+
+**Suspend** stops an addon without removing it: its token stops working at
+once and its webhook stops receiving (events from that time are not saved for
+it). *Resume* switches both back. A suspended addon is not asked for its
+health.
+
+**Updates.** The panel reads a signed addon's manifest again every hour, and
+when you press *Check for an update*. A new version that asks for nothing more
+than the addon already holds is applied by itself. One that asks for more
+permissions or events waits: the addon keeps exactly what it has, the row
+shows *Update waiting*, `panel.addon_update_waiting` is raised once, and
+*Review the update* lists only what it adds, each with its reason, for you to
+approve. An update that asks for a token or a webhook the addon never had
+cannot be approved in place; remove the addon and register it again.
