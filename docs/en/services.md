@@ -163,7 +163,9 @@ so a half-uploaded file never looks like a backup.
 
 The archive as a file in a chat, sent by the bot saved on the Telegram service
 and through its proxy. **Chat id** is a chat paired to a main-admin account — the
-number the Telegram page shows under it. The Bot API takes files up to **50 MB**;
+number the Telegram page shows under it. It may be your private chat or a group
+paired to you; in a group every member receives the archive, and with it every
+credential the panel holds, so choose the group with that in mind. The Bot API takes files up to **50 MB**;
 a larger archive is refused with that reason rather than sent to fail. Nothing
 in the chat is ever deleted.
 
@@ -176,16 +178,18 @@ a destination, so the same bucket or directory can hold other things.
 each provider you add. Two rules hold whatever the provider:
 
 - **No account is created from it.** Each account links its own identity: it
-  logs in with its password, opens **Single sign-on** on its menu and presses
-  *Link with …*. Someone with an account at the provider and no link here is
-  refused.
+  logs in with its password, opens **Single sign-on** on its menu, types its
+  current password again and presses *Link with …*. Someone with an account at
+  the provider and no link here is refused.
 - **Two-factor authentication still applies.** An account with a code is asked
   for it after the provider, as after a password.
 
 **The redirect URI.** The page shows one address to register at every
 provider, ending in `/api/login/oidc/callback`. It is the address the page is
 open on, so open the panel at the address your operators use before you copy
-it.
+it. Behind a reverse proxy, pass the original `Host` through (nginx:
+`proxy_set_header Host $http_host;`), or list the proxy under **Trusted
+proxies** so its `X-Forwarded-Host` counts; otherwise the sign-in is refused.
 
 **Adding a provider.** *Add provider*, pick it at the top, and the form asks for
 exactly what that provider needs, with where to create the client written above
@@ -206,9 +210,15 @@ the fields:
 
 *Test* checks that the provider answers. *Button name* changes what the button
 says; *On the login page* takes it off without deleting it. Deleting a provider
-removes the identities linked through it.
+removes the identities linked through it. So does an edit that changes who the
+provider says people are — its Client ID, its issuer or address, or for *OAuth 2.0 (other)*
+any of its three addresses or the id field; the dialog warns first, and each account links
+again with its password.
 
-**Locked out?** `nexora-panel admin reset-password` also removes the account's
+**Locked out?** Resetting another account's password on the **Admins** page
+removes that account's single sign-on links, its paired Telegram chats and its
+confirmed email addresses too — whoever had the password cannot keep a way in
+through them; the account pairs its own again once it is back. `nexora-panel admin reset-password` also removes the account's
 single sign-on links and turns its two-factor authentication off, so the
 recovery command stays the one way back in — see
 [locked out](install.md#locked-out).
