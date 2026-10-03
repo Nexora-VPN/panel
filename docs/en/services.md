@@ -169,6 +169,13 @@ credential the panel holds, so choose the group with that in mind. The Bot API t
 a larger archive is refused with that reason rather than sent to fail. Nothing
 in the chat is ever deleted.
 
+**Addons' backups.** While this destination is on, an addon — or a script of
+yours — holding the `backup:deliver` permission can send its own file to the
+same chat: the panel forwards it without keeping it, captioned with the
+sender's name, the file name and its size. Up to 50 MB and six files an hour
+per sender. An addon asks for the permission with its reason on the consent
+screen; switching this destination off stops every such send.
+
 **Retention.** Only files named like the panel's archives are ever deleted from
 a destination, so the same bucket or directory can hold other things.
 
