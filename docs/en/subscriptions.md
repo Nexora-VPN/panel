@@ -63,6 +63,21 @@ those names serve subscriptions and nothing at all else. That is also the one wa
 this setting can lock you out of the panel; see
 [locked out?](install.md#locked-out) in the install guide.)
 
+### With no subscription domain: the public address
+
+With no subscription domain, a link names the address the request for it
+came in on. For you in a browser that is the right address; for a program
+calling the panel by another name — an addon on the same server reaching it
+as `http://panel:2096`, or a script on a private address — it is a link none
+of your customers can open.
+
+**Public address**, next to the subscription domains, fixes that: an origin
+such as `https://vpn.example.com` (a scheme, a host, an optional port, no
+path). Every link is then built on it whoever asked, and an addon is told it
+when it is registered. A subscription domain still wins over it, and takes
+its `https://` from the public address rather than from the caller. Empty
+keeps the old behaviour.
+
 ### Why it is a list
 
 Because a domain being blocked is a thing that happens, and by then the links
