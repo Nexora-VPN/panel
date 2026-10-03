@@ -213,12 +213,12 @@ those pairs when you save them rather than dropping them silently later.
 
 ## Documentation
 
-| | Install | Choosing a database | Links and subscriptions | Monitoring | Panel services | The licence |
-| --- | --- | --- | --- | --- | --- | --- |
-| English | [install](docs/en/install.md) | [database](docs/en/database.md) | [subscriptions](docs/en/subscriptions.md) | [monitoring](docs/en/monitoring.md) | [services](docs/en/services.md) | [licence](docs/en/licence.md) |
-| فارسی | [نصب](docs/fa/install.md) | [دیتابیس](docs/fa/database.md) | [اشتراک‌ها](docs/fa/subscriptions.md) | [پایش](docs/fa/monitoring.md) | [سرویس‌ها](docs/fa/services.md) | [لایسنس](docs/fa/licence.md) |
-| Русский | [установка](docs/ru/install.md) | [база данных](docs/ru/database.md) | [подписки](docs/ru/subscriptions.md) | [мониторинг](docs/ru/monitoring.md) | [сервисы](docs/ru/services.md) | [лицензия](docs/ru/licence.md) |
-| 中文 | [安装](docs/zh/install.md) | [数据库](docs/zh/database.md) | [订阅](docs/zh/subscriptions.md) | [监控](docs/zh/monitoring.md) | [服务](docs/zh/services.md) | [许可证](docs/zh/licence.md) |
+| | Install | Choosing a database | Links and subscriptions | Monitoring | Panel services | Addons | The licence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| English | [install](docs/en/install.md) | [database](docs/en/database.md) | [subscriptions](docs/en/subscriptions.md) | [monitoring](docs/en/monitoring.md) | [services](docs/en/services.md) | [addons](docs/en/addons.md) | [licence](docs/en/licence.md) |
+| فارسی | [نصب](docs/fa/install.md) | [دیتابیس](docs/fa/database.md) | [اشتراک‌ها](docs/fa/subscriptions.md) | [پایش](docs/fa/monitoring.md) | [سرویس‌ها](docs/fa/services.md) | [افزونه‌ها](docs/fa/addons.md) | [لایسنس](docs/fa/licence.md) |
+| Русский | [установка](docs/ru/install.md) | [база данных](docs/ru/database.md) | [подписки](docs/ru/subscriptions.md) | [мониторинг](docs/ru/monitoring.md) | [сервисы](docs/ru/services.md) | [дополнения](docs/ru/addons.md) | [лицензия](docs/ru/licence.md) |
+| 中文 | [安装](docs/zh/install.md) | [数据库](docs/zh/database.md) | [订阅](docs/zh/subscriptions.md) | [监控](docs/zh/monitoring.md) | [服务](docs/zh/services.md) | [扩展](docs/zh/addons.md) | [许可证](docs/zh/licence.md) |
 
 ## Releases
 

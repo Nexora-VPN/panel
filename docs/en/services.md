@@ -232,6 +232,8 @@ needs to work with it: the address, the link to its interface, a health path,
 and the two things it may be given — an **API token** and a **webhook**.
 *Services → Addons* lists them.
 
+**Installing one.** *Browse* lists the addons at addons.nexora-panel.org; the panel installs one by a command it gives you or by itself over SSH, then registers it — see [Installing addons](addons.md). What follows is registering an addon that already runs, and looking after a registered one.
+
 **A signed addon** (one published by Nexora) is registered by its claim code:
 
 1. Start the addon. It shows a one-time **claim code** in its log or on its own
