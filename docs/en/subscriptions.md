@@ -166,14 +166,6 @@ the first configured one rather than to nothing. Retiring a domain is already
 how you take it out of service and it must not take a reseller's whole book
 offline as a side effect.
 
-### One detail about rule sets
-
-Nodes download mirrored rule sets from this same published address, and a node
-dials a name — `*.sub.example.com` is not one. So the mirror uses the first
-**plain** domain in your list, and if every entry is a wildcard it uses
-`rulesets.sub.example.com`, which your wildcard DNS record and your certificate
-already cover. The rule sets page shows the address it settled on.
-
 ## Several addresses per node
 
 **Nodes → the node's row → edit → Link addresses.** Up to four.

@@ -152,8 +152,8 @@ everything is not an ordinary server. It is a small signal, and it is the one
 that survives having no login page to find.
 
 **Settings → panel → masquerade directory** takes an absolute path, and every
-address on that port that is not the panel, a subscription or the rule-set
-mirror is served from it as an ordinary web site. `https://panel.example.com/`
+address on that port that is not the panel or a subscription is served from it
+as an ordinary web site. `https://panel.example.com/`
 becomes whatever you put in that directory; the panel stays at its base path.
 It applies after a panel restart.
 
@@ -204,7 +204,7 @@ before the first start.
 Each stack keeps what has to survive the container next to its compose file: the
 SQLite database in `./data` (the PostgreSQL stack uses a named volume instead),
 node binaries in `./bin`, backup archives in `./backups` — see
-[Backups](#backups) — and the mirrored rule-set files the panel serves to its
+[Backups](#backups) — and the mirrored rule-set files the panel hands to its
 nodes in `./rulesets`. That last one is a cache: clearing it is safe, and the
 panel re-downloads whatever is missing on the next start.
 
@@ -558,6 +558,11 @@ dialog checks first: it names the missing lists and offers to download them
 before applying, and it refuses outright when a list is one the catalogue cannot
 get either.
 
+The panel hands every rule set to a node itself, over the same link it uses to
+configure it, and the node reads the file — nodes download nothing, so no
+address has to be reachable from them. That needs a node from v0.0.2 on: an
+older node gets no rule sets and no rule matching on one until it is updated.
+
 The DNS presets are Cloudflare, Google, Quad9 and AdGuard over DNS-over-TLS, plus
 the node's own system resolver. AdGuard blocks ads at the resolver, which is an
 alternative to the ad-blocking routing preset rather than a companion to it.
@@ -795,7 +800,7 @@ server first if the server itself is going away.
 | `/var/opt/nexora/sub-themes/` | subscription page themes |
 | `/var/opt/nexora/presets/` | preset catalogue files, merged onto the one the panel ships |
 | `/var/opt/nexora/backups/` | backup archives and pre-restore snapshots (mode 0700) |
-| `/var/opt/nexora/rulesets/` | mirrored rule-set files the panel serves to its nodes |
+| `/var/opt/nexora/rulesets/` | mirrored rule-set files the panel hands to its nodes |
 | `/etc/systemd/system/nexora-panel.service` | the service unit |
 
 Everything else — admins, settings, certificates, nodes, users — lives in the
