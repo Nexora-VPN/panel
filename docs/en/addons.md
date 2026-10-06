@@ -44,7 +44,8 @@ manifest:
 
 1. **How** — *As a service* (its binary under systemd, no Docker), *With
    Docker* (its image, through its install script), or *Compose file* (for an
-   addon that ships only a compose file).
+   addon that ships only a compose file; its HTTPS answer cannot be
+   `acme-http` there, since nothing publishes port 80 for the CA).
 2. **Where the panel will reach it** — the addon's address once it runs, as
    this panel sees it. Plain `http://` only on a private address. While the
    addon's HTTPS answer is on, the form proposes its public address with the
@@ -130,7 +131,12 @@ addons share one server with the panel.
   tab; reload the list when it is made.
 - For an addon on another server only certificates issued by **dns-01**,
   **self-signed** or **uploaded** ones are offered: http-01 and tls-alpn-01
-  prove the panel's server, not the addon's.
+  prove the panel's server, not the addon's. The panel's own HTTPS
+  certificate is never offered there, whatever made it: its key would let
+  that server pass for the panel. This is checked again at every fetch, so
+  a certificate that becomes the panel's own later, or is issued again by
+  http-01, stops reaching such an addon — it keeps the copy it holds until
+  that ends; choose another on its row.
 - The addon serves HTTPS on its install **port** alone, with no plain-HTTP
   port beside it, and the public address names that port (443 when it names
   none): where 443 is taken, answer port 8443 with the public address
@@ -200,8 +206,9 @@ sh nexora-addon-install.sh --uninstall --purge   # deletes it too
 
 An addon removed with its data kept and installed again from the panel (a
 new install, a new claim code) registers as any other: it sees the new claim
-code, drops the registration it kept and sets its admin's password to the
-new install's answer. An update or a restart keeps both. An addon from an
+code, drops the registration it kept, sets its admin's password to the
+new install's answer, turns its second factor off and signs it out
+everywhere. An update or a restart keeps both. An addon from an
 older release answers *already registered* (409) instead; the panel says
 what to do: install it again from the panel, or remove it with its data
 first.
