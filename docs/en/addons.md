@@ -3,7 +3,7 @@
 Addons are separate programs that work beside the panel — a shop, a bot, a
 report. The panel finds them in the **addon directory** at
 [addons.nexora-panel.org](https://addons.nexora-panel.org), installs them on a
-server of yours — by a command you run, or by itself over SSH — and registers
+server of yours — by a command you run, or by itself — over SSH, or on its own server with none — and registers
 them once you have approved what they ask for. How a registered addon is
 looked after (health, suspend, updates of its permissions, removal) is in
 [Panel services → Addons](services.md#addons).
@@ -13,6 +13,8 @@ looked after (health, suspend, updates of its permissions, removal) is in
 | [The directory](#the-directory) | what is listed, and how far each addon is trusted |
 | [Installing by command](#installing-by-command) | the panel gives you one command to run |
 | [Installing over SSH](#installing-over-ssh) | the panel installs it on a server itself |
+| [On the panel's own server](#on-the-panels-own-server) | the panel installs it beside itself, with no SSH |
+| [A certificate from the panel](#a-certificate-from-the-panel) | HTTPS for an addon with no port 443 of its own |
 | [Updating](#updating) | the badge, and updating where the addon runs |
 | [Removing](#removing) | from its server, and from the panel |
 | [A mirror of the directory](#a-mirror-of-the-directory) | when addons.nexora-panel.org is out of reach |
@@ -82,11 +84,57 @@ SSH* — the same way the panel installs a node:
 
 **Install** runs the addon's install script on the server and shows its log
 live. The addon then registers as above: review and **Approve and register**.
-To install on the panel's own server, give that server's address — when the
-panel runs in Docker too, its host is one more SSH target.
+To install on the panel's own server, see
+[On the panel's own server](#on-the-panels-own-server); when the panel runs in
+Docker, its host is one more SSH target.
 
 The panel checks the server first (its architecture, systemd or Docker) and
 stops with the reason before writing anything if the addon cannot run there.
+
+## On the panel's own server
+
+When the panel runs directly on a Linux server (not in Docker), **Who runs
+it** offers *The panel, on this server* first, and picks it: the panel runs
+the addon's install script itself, as root, with no SSH and nothing to type.
+The release is checked against its signed `SHA256SUMS` exactly as over SSH,
+and **Where the panel will reach it** fills in as `http://127.0.0.1:<port>`.
+A panel in Docker does not offer it — it would install into its own
+container — and says why; install by command or over SSH there.
+
+An addon installed over SSH on the panel's own server moves to this kind of
+install with **Update on its host** → *This host is the panel's own server:
+run it here, with no SSH*. The panel refuses that for any other server.
+
+On the panel's server the addon takes its HTTPS certificate from the panel
+(below): an ACME certificate of its own would need the port 80 or 443 the
+panel or a node already holds, so the form does not offer it there.
+
+## A certificate from the panel
+
+An addon whose HTTPS answer offers **panel** — Shop and the notifier do —
+serves its public address with a certificate from the panel's own store
+(*Certificates*). The panel issues and renews it; the addon fetches it from
+the panel every few minutes (by its claim code before it registers, by its
+token after) and keeps a copy, so it comes up with HTTPS even while the panel
+is down. It needs no ACME of its own, so it listens on any port, and several
+addons share one server with the panel.
+
+- In the install form, answer **HTTPS certificate: panel** and choose the
+  certificate. *Make one on the Certificates page* opens the store in a new
+  tab; reload the list when it is made.
+- For an addon on another server only certificates issued by **dns-01**,
+  **self-signed** or **uploaded** ones are offered: http-01 and tls-alpn-01
+  prove the panel's server, not the addon's.
+- Where 443 is taken, give the public address a port of its own, e.g.
+  `https://shop.example.com:8443`: the addon serves HTTPS on the port its
+  address names.
+- Change or clear it later on the addon's row: **Certificate**.
+- The panel trusts a self-signed certificate it gave an addon when it reaches
+  that addon over https; browsers warn, as with any self-signed one.
+
+The other answers stay: **acme** (the addon gets its own, on port 443),
+**acme-http** (the same, the CA asking on port 80 — for a server of its own
+whose 443 is taken), **self-signed** and **off**.
 
 ## Updating
 
@@ -94,7 +142,7 @@ When the directory has a newer version of a registered addon, its row on the
 *Registered* tab shows it (*0.2.0 in the directory*) and the Addons menu gets a
 dot.
 
-- **Installed over SSH:** **Update on its host** runs the install script again
+- **Installed over SSH or on this server:** **Update on its host** runs the install script again
   on that server. Its settings and data are kept, and the panel reads the new
   manifest at once.
 - **Installed by command:** on its server, run its install script again
@@ -109,7 +157,7 @@ waits for your approval before it gets them — see
 
 ## Removing
 
-**Remove from its host** (an addon installed over SSH) runs its install script
+**Remove from its host** (an addon installed over SSH or on this server) runs its install script
 with `--uninstall` on that server; tick *Delete its data too* to remove its
 data directory as well — that cannot be undone. The addon stays registered on
 the panel until you also **Remove** it there; removing it there tells the addon
