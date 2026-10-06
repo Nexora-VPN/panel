@@ -15,6 +15,7 @@ looked after (health, suspend, updates of its permissions, removal) is in
 | [Installing over SSH](#installing-over-ssh) | the panel installs it on a server itself |
 | [On the panel's own server](#on-the-panels-own-server) | the panel installs it beside itself, with no SSH |
 | [A certificate from the panel](#a-certificate-from-the-panel) | HTTPS for an addon with no port 443 of its own |
+| [The addon's own certificate](#the-addons-own-certificate) | `self-signed`: the panel trusts the certificate you approve |
 | [Updating](#updating) | the badge, and updating where the addon runs |
 | [Removing](#removing) | from its server, and from the panel |
 | [A mirror of the directory](#a-mirror-of-the-directory) | when addons.nexora-panel.org is out of reach |
@@ -45,12 +46,16 @@ manifest:
    Docker* (its image, through its install script), or *Compose file* (for an
    addon that ships only a compose file).
 2. **Where the panel will reach it** — the addon's address once it runs, as
-   this panel sees it. Plain `http://` only on a private address.
+   this panel sees it. Plain `http://` only on a private address. While the
+   addon's HTTPS answer is on, the form proposes its public address with the
+   admin path: the panel reaches it there, over HTTPS.
 3. **Where it reaches the panel** — this panel's address as the addon's server
    sees it.
 4. **Its questions** — a port, a database, a token: exactly what the addon
    declares, each with its type. A question that depends on another appears
-   only when it applies.
+   only when it applies. An admin password takes 10 characters to 72 bytes
+   (about 36 Persian or Russian letters, 24 Chinese); the form says so, and
+   `install.sh` refuses one outside that for a command install.
 
 **Make the command** checks the answers, makes a one-time claim code and gives
 one command to run **as root on the addon's server**. If one of the answers is
@@ -97,7 +102,8 @@ When the panel runs directly on a Linux server (not in Docker), **Who runs
 it** offers *The panel, on this server* first, and picks it: the panel runs
 the addon's install script itself, as root, with no SSH and nothing to type.
 The release is checked against its signed `SHA256SUMS` exactly as over SSH,
-and **Where the panel will reach it** fills in as `http://127.0.0.1:<port>`.
+and **Where the panel will reach it** fills in as `http://127.0.0.1:<port>` —
+or, while the addon's HTTPS is on, as its public address.
 A panel in Docker does not offer it — it would install into its own
 container — and says why; install by command or over SSH there.
 
@@ -125,16 +131,38 @@ addons share one server with the panel.
 - For an addon on another server only certificates issued by **dns-01**,
   **self-signed** or **uploaded** ones are offered: http-01 and tls-alpn-01
   prove the panel's server, not the addon's.
-- Where 443 is taken, give the public address a port of its own, e.g.
-  `https://shop.example.com:8443`: the addon serves HTTPS on the port its
-  address names.
+- The addon serves HTTPS on its install **port** alone, with no plain-HTTP
+  port beside it, and the public address names that port (443 when it names
+  none): where 443 is taken, answer port 8443 with the public address
+  `https://shop.example.com:8443`. The form and `install.sh` refuse a public
+  address on another port. In Docker, compose publishes that port as it is.
 - Change or clear it later on the addon's row: **Certificate**.
 - The panel trusts a self-signed certificate it gave an addon when it reaches
   that addon over https; browsers warn, as with any self-signed one.
 
-The other answers stay: **acme** (the addon gets its own, on port 443),
-**acme-http** (the same, the CA asking on port 80 — for a server of its own
-whose 443 is taken), **self-signed** and **off**.
+The other answers stay, on the same one port: **acme** (the addon gets its
+own, answering the CA on its port, so the port is 443 — `install.sh` refuses
+another; choose acme-http or panel there), **acme-http** (the same on any
+port, the CA asking on port 80, which is published only in this mode),
+**self-signed** ([below](#the-addons-own-certificate)) and **off** (plain
+HTTP on the port, for a reverse proxy of yours). An addon installed before
+this keeps its two ports when it is updated: nothing to do.
+
+## The addon's own certificate
+
+With **self-signed** the addon serves a certificate it made itself, which
+neither a CA nor the panel vouches for. At the consent screen the panel shows
+that certificate's SHA-256 fingerprint with a warning: compare it with the one
+the addon's Set-up page shows; approving trusts exactly that certificate.
+
+The addon renews it about once a year (397-day certificates, renewed 30 days
+before they end). The panel then no longer trusts it — its health fails,
+saying the certificate is not trusted — and an addon added by hand starts
+out that way. In the addon's row menu, **Certificate** shows **What it
+serves now** with its fingerprint; compare it, then **Trust this certificate**.
+
+For an address by IP, **panel** with a self-signed certificate from the
+panel's store needs none of this: the panel trusts its own certificates.
 
 ## Updating
 
@@ -169,6 +197,14 @@ By hand, on the addon's server:
 sh nexora-addon-install.sh --uninstall           # keeps its data
 sh nexora-addon-install.sh --uninstall --purge   # deletes it too
 ```
+
+An addon removed with its data kept and installed again from the panel (a
+new install, a new claim code) registers as any other: it sees the new claim
+code, drops the registration it kept and sets its admin's password to the
+new install's answer. An update or a restart keeps both. An addon from an
+older release answers *already registered* (409) instead; the panel says
+what to do: install it again from the panel, or remove it with its data
+first.
 
 ## A mirror of the directory
 
