@@ -54,10 +54,11 @@ services:
       # arrangement where losing the server loses everything at once.
       - ./backups:/app/db/backups
       # Mirrored rule-set files, kept beside the database as well
-      # (/app/db/rulesets). This is the copy the node below downloads from,
-      # over the panel's own address; mounted out so the cache stays out of the
-      # database directory and can be cleared on its own — the panel
-      # re-downloads whatever is missing on the next start.
+      # (/app/db/rulesets). The panel downloads each list here and pushes the
+      # bytes to every node over its control link (the node below keeps its
+      # copy in ./cache); mounted out so the mirror stays out of the database
+      # directory and can be cleared on its own — the panel re-downloads
+      # whatever is missing on the next start.
       - ./rulesets:/app/db/rulesets
       # Node binaries the panel hands to node installers (for the nodes on other
       # servers — this one runs from its own image), and subscription themes.
@@ -83,6 +84,7 @@ services:
       NEXORA_NODE_CLIENT_CA: /app/certs/panel_ca.pem
     volumes:
       - ./certs:/app/certs
+      - ./cache:/app/cache
     network_mode: host
     # Needed by the TUN inbound and by any inbound that binds a privileged port.
     cap_add:
