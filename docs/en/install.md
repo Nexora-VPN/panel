@@ -295,6 +295,21 @@ nexora-panel config set update_check false
 The button on the page still works with the check off — that setting is about
 what the panel does on its own, not about what you may ask it for.
 
+**Update the panel before its nodes.** A node newer than v0.0.2 no longer
+answers the request panels up to v0.0.2 use to take an account off a node the
+moment it expires or runs out of traffic. Against such a panel that account
+keeps working on the updated node until some other change resyncs it. That
+includes updating a node from an older panel's own page: update the panel
+first, then the nodes.
+
+**A node serves only while its panel reaches it.** A node switched off in the
+panel — by you, or by its traffic limit — is emptied at once. A node the panel
+cannot reach keeps serving for three minutes, then stops. When the panel reaches
+it again, it sends the whole configuration back. A panel restart or upgrade
+costs nobody their connection. A panel that stays down longer than that takes
+its nodes' service with it. The three-minute stop needs a node from the release
+that brings it; an older node keeps serving until its process restarts.
+
 ### From the command line
 
 Run the installer again. It detects the existing install and updates in place:
