@@ -63,6 +63,13 @@ those names serve subscriptions and nothing at all else. That is also the one wa
 this setting can lock you out of the panel; see
 [locked out?](install.md#locked-out) in the install guide.)
 
+Write each domain as a **host alone** — no port, no path. A link on it
+carries the port the panel listens on (left out when that is 443 for HTTPS or
+80 for HTTP), and with a [public address](#with-no-subscription-domain-the-public-address)
+set it carries no port at all, since the panel is then reached through whatever
+sits in front of it. A domain with a port is refused when you save; one an older
+version stored with a port has it removed on upgrade.
+
 ### With no subscription domain: the public address
 
 With no subscription domain, a link names the address the request for it
@@ -185,7 +192,7 @@ Link addresses
 What each part is for:
 
 - **The first row is the primary.** Endpoints (WireGuard, OpenVPN,
-  OpenConnect), downloadable app configs and tunnels all use it on its own — a
+  OpenConnect) and downloadable app configs use it on its own — a
   `.conf` file is saved once and cannot carry alternatives. Reordering the list
   therefore changes what those get.
 - **The label names the entry.** An address with a label suffixes the entry
@@ -200,7 +207,8 @@ What each part is for:
 
 A tunnel dials **every** address of its target as failover, all under one peer
 name, so a blocked address costs the links it was carrying rather than the
-tunnel. Both stay connected — there is no cold standby to warm up.
+tunnel. Both stay connected — there is no cold standby to warm up. See
+[tunnels](tunnels.md).
 
 ## Domain fronting
 
