@@ -58,7 +58,7 @@ A third stack, `docker/panel-and-node`, runs a node beside the panel on one
 server. It works, and it is **not recommended** — a node's address goes into
 every subscription link, so it publishes the panel's address to every user, and
 a node under load takes the panel down with it. The
-[install guide](docs/en/install.md#panel-and-node-on-the-same-server) has the
+[install guide](https://docs.nexora-panel.org/start/same-server) has the
 two-step start and the caveats.
 
 ## Getting around it
@@ -134,7 +134,7 @@ first screen, choose *Restore a backup* instead of filling the form. The wizard
 is the only place a restore is possible before an account exists, which is
 exactly the state a fresh install is in. The licence comes with the backup but
 stays bound to the old host's fingerprint; **License → Move the licence to this
-machine** takes it across — see [moving to a new server](docs/en/licence.md#moving-to-a-new-server).
+machine** takes it across — see [moving to a new server](https://docs.nexora-panel.org/use/licence).
 
 The schedule is also settable from the command line, which is what a headless or
 scripted install wants:
@@ -159,7 +159,7 @@ Two different questions decide what an account reaches: **permissions decide
 which pages**, and **ownership decides which users** — a reseller sees the
 accounts it owns whatever its permissions say. One account **owns** the panel:
 it cannot be deleted or demoted, and only it can hand the panel to another main
-admin. See [operators and roles](docs/en/install.md#operators-and-roles).
+admin. See [operators and roles](https://docs.nexora-panel.org/use/roles).
 
 Operator accounts are the panel's, not the browser's. Sessions are stored, so a
 restart or an update logs nobody out, and each operator can see their own open
@@ -207,18 +207,29 @@ Entry names come from a template (`{USER} · {ROUTE} · {REMAINING}`) with a
 server-rendered preview, and the response carries the headers clients actually
 read — title, quota, update interval, announcement, support link.
 
-See [links and subscriptions](docs/en/subscriptions.md) for all of it, including
+See [links and subscriptions](https://docs.nexora-panel.org/use/subscriptions) for all of it, including
 what a CDN cannot carry (REALITY, QUIC, port hopping) and why the panel refuses
 those pairs when you save them rather than dropping them silently later.
 
 ## Documentation
 
-| | Install | Choosing a database | Links and subscriptions | Tunnels | Monitoring | Panel services | Addons | The licence |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| English | [install](docs/en/install.md) | [database](docs/en/database.md) | [subscriptions](docs/en/subscriptions.md) | [tunnels](docs/en/tunnels.md) | [monitoring](docs/en/monitoring.md) | [services](docs/en/services.md) | [addons](docs/en/addons.md) | [licence](docs/en/licence.md) |
-| فارسی | [نصب](docs/fa/install.md) | [دیتابیس](docs/fa/database.md) | [اشتراک‌ها](docs/fa/subscriptions.md) | [تونل‌ها](docs/fa/tunnels.md) | [پایش](docs/fa/monitoring.md) | [سرویس‌ها](docs/fa/services.md) | [افزونه‌ها](docs/fa/addons.md) | [لایسنس](docs/fa/licence.md) |
-| Русский | [установка](docs/ru/install.md) | [база данных](docs/ru/database.md) | [подписки](docs/ru/subscriptions.md) | [туннели](docs/ru/tunnels.md) | [мониторинг](docs/ru/monitoring.md) | [сервисы](docs/ru/services.md) | [дополнения](docs/ru/addons.md) | [лицензия](docs/ru/licence.md) |
-| 中文 | [安装](docs/zh/install.md) | [数据库](docs/zh/database.md) | [订阅](docs/zh/subscriptions.md) | [隧道](docs/zh/tunnels.md) | [监控](docs/zh/monitoring.md) | [服务](docs/zh/services.md) | [扩展](docs/zh/addons.md) | [许可证](docs/zh/licence.md) |
+Everything about installing and running Nexora is on
+**[docs.nexora-panel.org](https://docs.nexora-panel.org)**, with screenshots,
+search and four languages:
+[English](https://docs.nexora-panel.org/) ·
+[فارسی](https://docs.nexora-panel.org/fa/) ·
+[Русский](https://docs.nexora-panel.org/ru/) ·
+[中文](https://docs.nexora-panel.org/zh/).
+
+| | |
+| --- | --- |
+| [Get started](https://docs.nexora-panel.org/start/) | install the panel, the setup wizard, add a node, the first user |
+| [Use the panel](https://docs.nexora-panel.org/use/) | every page of the panel |
+| [Protocols](https://docs.nexora-panel.org/protocols/) | each inbound type and the apps that read it |
+| [How it works](https://docs.nexora-panel.org/how/) | the architecture, the path of a packet, sync, tunnels, events |
+| [Reference](https://docs.nexora-panel.org/reference/cli) | command line, files and ports, events, the API |
+
+The `docs/` folder here only points to the site.
 
 ## Releases
 
@@ -282,4 +293,4 @@ a licence caps users and nodes and nothing else. It is bought, renewed,
 upgraded and moved from the panel's own **License** page — the licence
 installs itself, with no key to paste — and is bound to the panel host's
 hardware fingerprint, which `nexora-panel hwid` prints. See
-[the licence](docs/en/licence.md).
+[the licence](https://docs.nexora-panel.org/use/licence).
